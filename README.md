@@ -45,9 +45,9 @@ Note that this may take a while. This depends of course on your download speed. 
 ## Usage
 
 Depending on your use case, some of the following introductory Jupyter notebooks may be helpful:
-- [examples/benchmark.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/benchmark.ipynb) shows how to download or reproduce our experimental results, how to benchmark other methods, and how to evaluate the results.
-- [examples/using_bmdal.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/using_bmdal.ipynb) shows how to apply our BMDAL framework to your use-case.
-- [examples/framework_details.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/framework_details.ipynb) explains how our BMDAL framework is implemented, which may be relevant for advanced usage.
+- [examples/benchmark.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/benchmark.ipynb) shows how to download or reproduce our experimental results, how to benchmark other methods, and how to evaluate the results.
+- [examples/using_bmdal.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/using_bmdal.ipynb) shows how to apply our BMDAL framework to your use-case.
+- [examples/framework_details.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/framework_details.ipynb) explains how our BMDAL framework is implemented, which may be relevant for advanced usage.
 
 Besides these notebooks, you can also take a look at the code directly. The more important parts of our code are documented with docstrings.
 
