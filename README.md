@@ -44,12 +44,6 @@ Note that this may take a while. This depends of course on your download speed. 
 
 ## Usage
 
-Note that our BMDAL methods may encounter numerical problems when run on a GPU where matrix multiplication in Tensorfloat 32 format is enabled. To disable this, set
-```
-torch.backends.cuda.matmul.allow_tf32 = False
-```
-in your code before running our BMDAL code. When running our benchmarking code, this is automatically done in `ModelTrainer.__call__()` in `train.py`.
-
 Depending on your use case, some of the following introductory Jupyter notebooks may be helpful:
 - [examples/benchmark.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/benchmark.ipynb) shows how to download or reproduce our experimental results, how to benchmark other methods, and how to evaluate the results.
 - [examples/using_bmdal.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/using_bmdal.ipynb) shows how to apply our BMDAL framework to your use-case.
