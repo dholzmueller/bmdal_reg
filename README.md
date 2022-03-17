@@ -23,7 +23,7 @@ Alternatively, the following command installs current versions of the packages:
 pip3 install torch numpy dill psutil matplotlib seaborn pandas openml mat4py
 ```
 
-Clone the repository and change to its folder:
+Clone the repository (or download the files from the repository) and change to its folder:
 ```
 git clone git@github.com:dholzmueller/bmdal_reg.git
 cd bmdal_reg
@@ -45,9 +45,9 @@ Note that this may take a while. This depends of course on your download speed. 
 ## Usage
 
 Depending on your use case, some of the following introductory Jupyter notebooks may be helpful:
-- [examples/benchmark.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/benchmark.ipynb) shows how to download or reproduce our experimental results, how to benchmark other methods, and how to evaluate the results.
-- [examples/using_bmdal.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/using_bmdal.ipynb) shows how to apply our BMDAL framework to your use-case.
-- [examples/framework_details.ipynb](https://github.com/dholzmueller/bmdal_reg/blob/main/examples/framework_details.ipynb) explains how our BMDAL framework is implemented, which may be relevant for advanced usage.
+- [examples/benchmark.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/benchmark.ipynb) shows how to download or reproduce our experimental results, how to benchmark other methods, and how to evaluate the results.
+- [examples/using_bmdal.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/using_bmdal.ipynb) shows how to apply our BMDAL framework to your use-case.
+- [examples/framework_details.ipynb](https://github.com/dholzmueller/bmdal_reg/examples/framework_details.ipynb) explains how our BMDAL framework is implemented, which may be relevant for advanced usage.
 
 Besides these notebooks, you can also take a look at the code directly. The more important parts of our code are documented with docstrings.
 
@@ -57,7 +57,8 @@ The code is structured as follows:
 - The `bmdal` folder contains the implementation of all BMDAL methods, with its main interface in `bmdal/algorithms.py`.
 - The `evaluation` folder contains code for analyzing and plotting generated data, which is called from `run_evaluation.py`
 - The `examples` folder contains Jupyter Notebooks for instructive purposes as mentioned above.
-- The file `download_data.py` allows for downloading the data, `run_experiments.py` allows for starting the experiments, `test_single_task.py` allows to test a configuration on a data set, `rename_algs.py` contains some functionality for adjusting experiment data in case of errors, and `check_task_learnability.py` has been used to sort out some data sets that are hard to learn.
+- The file `download_data.py` allows for downloading the data, `run_experiments.py` allows for starting the experiments, `test_single_task.py` allows for testing a configuration on a data set, and `rename_algs.py` contains some functionality for adjusting experiment data in case of mistakes. 
+- The file `check_task_learnability.py` has been used to check the reduction in RMSE on different data sets when going from 256 to 4352 random samples. We used this to sort out the data sets where the reduction in RMSE was too small, since these data sets are unlikely to make a substantial difference in the benchmark results.
 - The files `data.py`, `layers.py`, `models.py`, `task_execution.py`, `train.py` and `utils.py` implement parts of data loading, training, parallel execution.
 
 ## Contributors
