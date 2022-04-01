@@ -388,8 +388,7 @@ class BatchSelectorImpl:
                 alg = MaxDetSelectionMethod(self.features['pool'], self.features['train'],
                                             noise_sigma=config.get('maxdet_sigma', 0.0), **config)
         elif selection_method == 'maxdist':
-            alg = MaxDistSelectionMethod(self.features['pool'], self.features['train'],
-                                         sel_with_train=config.get('sel_with_train', None), **config)
+            alg = MaxDistSelectionMethod(self.features['pool'], self.features['train'], **config)
         elif selection_method == 'lcmd':
             alg = LargestClusterMaxDistSelectionMethod(self.features['pool'], self.features['train'], **config)
         elif selection_method == 'rmds':
