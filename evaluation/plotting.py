@@ -4,12 +4,17 @@ matplotlib.use('pdf')
 matplotlib.rcParams.update({
     "pgf.texsystem": "pdflatex",
     'font.family': 'serif',
-    'font.size': 10,
+    'font.size': 10.95,
     'text.usetex': True,
     'pgf.rcfonts': False,
     # 'legend.framealpha': 0.5,
     'text.latex.preamble': r'\usepackage{times} \usepackage{amsmath} \usepackage{amsfonts} \usepackage{amssymb}'
 })
+# from tueplots import bundles, fonts, fontsizes, figsizes
+# matplotlib.rcParams.update(bundles.jmlr2001())
+# matplotlib.rcParams.update(fonts.jmlr2001_tex())
+# matplotlib.rcParams.update(fontsizes.jmlr2001())
+
 import matplotlib.pyplot as plt
 from typing import *
 import numpy as np
@@ -31,6 +36,11 @@ def rgb_to_hex(rgb):
     return '#%02x%02x%02x' % rgb
 
 
+colors = [u'#a06010', u'#d62728', u'#e377c2', u'#2ca02c', u'#ff7f0e', u'#9467bd', u'#17becf', u'#7f7f7f',
+          u'#bcbd22', u'#1f77b4']
+markers = ['^', 'v', '<', '>', 'P', 'D', 's', 'v']
+
+
 def plot_batch_sizes_ax(ax: plt.Axes, results: ExperimentResults, metric_name: str, set_ticks_and_labels: bool = True,
                         **plot_options):
     last_errors = results.get_last_errors(metric_name)
@@ -40,9 +50,10 @@ def plot_batch_sizes_ax(ax: plt.Axes, results: ExperimentResults, metric_name: s
     # default matplotlib colors:
     # colors = [u'#1f77b4', u'#ff7f0e', u'#2ca02c', u'#d62728', u'#9467bd', u'#8c564b', u'#e377c2', u'#7f7f7f',
     #           u'#bcbd22', u'#17becf']
-    colors = [u'#a06010', u'#d62728', u'#2ca02c', u'#ff7f0e', u'#9467bd', u'#17becf', u'#e377c2', u'#7f7f7f',
-              u'#bcbd22', u'#1f77b4']
+
     color_idx = 0
+
+    plot_options = utils.update_dict(dict(alpha=1.0, markersize=3.5), plot_options)
 
     for alg_name in results.alg_names:
         log_means = []
@@ -83,7 +94,7 @@ def plot_batch_sizes_ax(ax: plt.Axes, results: ExperimentResults, metric_name: s
             minus = np.mean(log_means, axis=0) - np.linalg.norm(alg_stds, axis=0) / len(alg_stds)
             plus = np.mean(log_means, axis=0) + np.linalg.norm(alg_stds, axis=0) / len(alg_stds)
             ax.fill_between(np.log(ds_batch_sizes[0]), minus, plus, facecolor=colors[color_idx], alpha=0.2)
-            ax.plot(np.log(ds_batch_sizes[0]), np.mean(log_means, axis=0), '--o',
+            ax.plot(np.log(ds_batch_sizes[0]), np.mean(log_means, axis=0), '--', marker=markers[color_idx],
                     label=get_latex_selection_method(alg_name.split('_')[1]), color=colors[color_idx], **plot_options)
             color_idx += 1
 
@@ -98,9 +109,10 @@ def plot_batch_sizes_ax(ax: plt.Axes, results: ExperimentResults, metric_name: s
         ax.set_ylabel(r'mean log ' + f'{get_latex_metric_name(metric_name)}', **axis_font)
 
 
-def plot_batch_sizes(results: ExperimentResults, filename: Union[str, Path], metric_name: str):
+def plot_batch_sizes(results: ExperimentResults, filename: Union[str, Path], metric_name: str,
+                     figsize: Optional[Tuple[float, float]] = None):
     # plot mean final log metric against the al batch size
-    fig, ax = plt.subplots(figsize=(4, 4))
+    fig, ax = plt.subplots(figsize=figsize or (4, 4))
 
     plot_batch_sizes_ax(ax, results, metric_name)
 
@@ -185,7 +197,7 @@ def plot_batch_sizes_individual_subplots(results: ExperimentResults, filename: U
 def plot_batch_sizes_metrics_subplots(results: ExperimentResults, filename: Union[str, Path]):
     # plot mean final log metric against the al batch size
 
-    fig, axs = plt.subplots(3, 2, figsize=(7, 9))
+    fig, axs = plt.subplots(3, 2, figsize=(8, 9))
     metric_names = ['mae', 'rmse', 'q95', 'q99', 'maxe']
     for metric_idx, metric_name in enumerate(metric_names):
         i = metric_idx // 2
@@ -210,8 +222,8 @@ def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_nam
     # default matplotlib colors:
     # colors = [u'#1f77b4', u'#ff7f0e', u'#2ca02c', u'#d62728', u'#9467bd', u'#8c564b', u'#e377c2', u'#7f7f7f',
     #           u'#bcbd22', u'#17becf']
-    colors = [u'#a06010', u'#d62728', u'#2ca02c', u'#ff7f0e', u'#9467bd', u'#17becf', u'#e377c2', u'#7f7f7f',
-              u'#bcbd22', u'#1f77b4']
+    # colors = [u'#a06010', u'#d62728', u'#2ca02c', u'#ff7f0e', u'#9467bd', u'#17becf', u'#e377c2', u'#7f7f7f',
+    #           u'#bcbd22', u'#1f77b4']
 
     ds_names = list({'_'.join(task_name.split('_')[:-1]) for task_name in results.task_names})
 
@@ -232,7 +244,8 @@ def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_nam
                 ax.plot([np.log(n_train[0]), np.log(n_train[-1])], [results_list[-1], results_list[-1]],
                         '--', color='k', **plot_options)
         else:
-            ax.plot(np.log(n_train), results_list, '--o', color=colors[color_idx], label=label, **plot_options)
+            ax.plot(np.log(n_train), results_list, '--', marker=markers[color_idx], color=colors[color_idx],
+                    label=label, **plot_options)
             color_idx += 1
 
     if set_ticks_and_labels:
@@ -247,7 +260,7 @@ def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_nam
 
 
 def plot_learning_curves(results: ExperimentResults, filename: Union[str, Path], metric_name: str,
-                         labels: Optional[List[str]] = None, figsize: Optional[Tuple[int, int]] = None):
+                         labels: Optional[List[str]] = None, figsize: Optional[Tuple[float, float]] = None):
     # plot averaged learning curve for all tasks
     fig, axs = plt.subplots(figsize=figsize or (3.5, 3.5))
 
@@ -334,7 +347,7 @@ def plot_learning_curves_individual_subplots(results: ExperimentResults, filenam
 
 def plot_learning_curves_metrics_subplots(results: ExperimentResults, filename: Union[str, Path]):
     # plot mean final log metric against the al batch size
-    fig, axs = plt.subplots(3, 2, figsize=(7, 9))
+    fig, axs = plt.subplots(3, 2, figsize=(7.2, 9))
     metric_names = ['mae', 'rmse', 'q95', 'q99', 'maxe']
     for metric_idx, metric_name in enumerate(metric_names):
         i = metric_idx // 2

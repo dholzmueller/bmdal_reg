@@ -288,7 +288,7 @@ class BatchALJob(AbstractJob):
     This class implements the type of jobs used in Batch Active Learning, such that they can be used in JobScheduler.
     """
     def __init__(self, task: Task, split_id: int, trainer: ModelTrainer, ram_gb_per_sample: float, exp_name: str,
-                 use_pool_for_normalization: bool):
+                 use_pool_for_normalization: bool, do_timing: bool, ram_gb_per_sample_bs: float):
         """
         :param task: Task to run.
         :param split_id: ID of the task split to run.
@@ -301,14 +301,16 @@ class BatchALJob(AbstractJob):
         self.split_id = split_id
         self.trainer = trainer
         self.ram_gb_per_sample = ram_gb_per_sample
+        self.ram_gb_per_sample_bs = ram_gb_per_sample_bs
         self.exp_name = exp_name
         self.use_pool_for_normalization = use_pool_for_normalization
+        self.do_timing = do_timing
 
     def __call__(self, device: str):
         try:
             result_dict = self.trainer(TaskSplit(self.task, id=self.split_id,
                                                  use_pool_for_normalization=self.use_pool_for_normalization),
-                                       device=device)
+                                       device=device, do_timing=self.do_timing)
             utils.serialize(self.trainer.get_result_file_path(self.exp_name, self.task.task_name, self.split_id), result_dict,
                             use_json=True)
         except Exception as e:
@@ -319,8 +321,10 @@ class BatchALJob(AbstractJob):
             print('', file=sys.stderr, flush=True)
 
     def get_ram_usage_gb(self) -> float:
+        max_bs = (max(self.task.al_batch_sizes) if len(self.task.al_batch_sizes) > 0 else 0)
         return 0.2 + self.task.data_info.n_samples * self.task.data_info.n_features * 8 / (1024**3) \
-               + (self.task.n_train + self.task.n_pool) * self.ram_gb_per_sample
+               + (self.task.n_train + self.task.n_pool) * self.ram_gb_per_sample \
+               + (self.task.n_train + self.task.n_pool) * max_bs * self.ram_gb_per_sample_bs
 
     def get_desc(self) -> str:
         return f'{self.trainer.alg_name} on split {self.split_id} of task {self.task.task_name}'
@@ -330,39 +334,39 @@ class JobRunner:
     """
     Simple class for adding Batch AL jobs and then running them in parallel using a JobScheduler.
     """
-    def __init__(self, scheduler: JobScheduler, n_splits: int, exp_name: str,
-                 filter_alg_names: Optional[List[str]] = None, use_pool_for_normalization: bool = True):
+    def __init__(self, scheduler: JobScheduler):
         """
         :param scheduler: The JobScheduler configuration that should be used to run the jobs.
-        :param n_splits: Number of splits to use per task.
         """
         self.scheduler = scheduler
-        self.n_splits = n_splits
         self.jobs = []
-        self.filter_alg_names = filter_alg_names
-        self.exp_name = exp_name
-        self.use_pool_for_normalization = use_pool_for_normalization
 
-    def add(self, tasks: List[Task], ram_gb_per_sample: float, trainer: ModelTrainer):
+    def add(self, exp_name: str, split_id: int, tasks: List[Task], ram_gb_per_sample: float,
+            trainer: ModelTrainer, do_timing: bool, warn_if_exists: bool = True,
+            use_pool_for_normalization: bool = True, ram_gb_per_sample_bs: float = 0.0):
         """
         Adds jobs for each task in tasks and for each split in range(self.n_splits)
         to the list of jobs that will be run in self.run_all().
+        :param exp_name: experiment group name, is used for the top-level folder for saving
+        :param split_id: id of the split to run on
         :param tasks: List of tasks that the trainer will be run on.
         :param ram_gb_per_sample: RAM estimate (in GB) per sample, typically of the order of 1e-5.
         An upper bound on the RAM usage (in GB) of a process is computed as
         0.2 + (size of data set in GB) + ram_gb_per_sample * (n_train + n_pool).
         :param trainer: ModelTrainer that runs a certain configuration of batch active learning.
+        :param do_timing: Whether to take extra efforts (CUDA synchronization) for proper timing.
+        :param warn_if_exists: Whether to print a message if the results already exist
+        :param use_pool_for_normalization: whether to compute data normalization statistics also based on the pool data
         """
-        if self.filter_alg_names is not None and trainer.alg_name not in self.filter_alg_names:
-            return
         for task in tasks:
-            for split_id in range(self.n_splits):
-                if utils.existsFile(trainer.get_result_file_path(self.exp_name, task.task_name, split_id)):
+            if utils.existsFile(trainer.get_result_file_path(exp_name, task.task_name, split_id)):
+                if warn_if_exists:
                     print(f'Results already exist for {trainer.alg_name} on split {split_id} of task {task.task_name}',
-                        flush=True)
-                    continue
-                self.jobs.append(BatchALJob(task, split_id, trainer, ram_gb_per_sample, exp_name=self.exp_name,
-                                            use_pool_for_normalization=self.use_pool_for_normalization))
+                          flush=True)
+                continue
+            self.jobs.append(BatchALJob(task, split_id, trainer, ram_gb_per_sample, exp_name=exp_name,
+                                        use_pool_for_normalization=use_pool_for_normalization,
+                                        do_timing=do_timing, ram_gb_per_sample_bs=ram_gb_per_sample_bs))
 
     def run_all(self):
         """

@@ -51,7 +51,7 @@ def select_batch(batch_size: int, models: List[nn.Module], data: Dict[str, Featu
                                     As for 'train', there is also an optional second parameter
                                     for explicitly controlling the rescaling.
     :param selection_method: Selection method to apply. Currently supported options are
-    'random', 'maxdiag', 'maxdet', 'fw' (for FrankWolfe), 'maxdist', 'kmeanspp', 'lcmd'
+    'random', 'maxdiag', 'maxdet', 'bait', 'fw' (for FrankWolfe), 'maxdist', 'kmeanspp', 'lcmd'
     and the experimental options 'fw-kernel' (for FrankWolfe in kernel space, slow!), 'rmds' and 'sosd' (slow!)
     :param precomp_batch_size: Batch size used for precomputations of the features.
     :param nn_batch_size: Batch size used for passing the data through the NN.
@@ -84,7 +84,8 @@ def select_batch(batch_size: int, models: List[nn.Module], data: Dict[str, Featu
     {'kernel_time': {'total': <float>, 'process': <float>},
      'selection_time': {'total': <float>, 'process': <float>},
      'selection_status': <None or status message>}
-     and additionally may contain 'eff_dim': <float> if compute_eff_dim=True has been passed in **config.
+    and additionally may contain 'eff_dim': <float> if compute_eff_dim=True has been passed in **config.
+    Times are measured in seconds.
     """
     bs = BatchSelectorImpl(models, data, y_train)
     return bs.select(base_kernel=base_kernel, kernel_transforms=kernel_transforms, selection_method=selection_method,
@@ -117,6 +118,7 @@ class BatchSelectorImpl:
         self.n_models = len(models)
         self.y_train = y_train
         self.has_select_been_called = False
+        self.device = self.data['train'].get_device()
 
     def apply_tfm(self, model_idx: int, tfm: FeaturesTransform):
         """
@@ -178,7 +180,7 @@ class BatchSelectorImpl:
                                         As for 'train', there is also an optional second parameter
                                         for explicitly controlling the rescaling.
         :param selection_method: Selection method to apply. Currently supported options are
-        'random', 'maxdiag', 'maxdet', 'fw' (for FrankWolfe), 'maxdist', 'kmeanspp', 'lcmd'
+        'random', 'maxdiag', 'maxdet', 'bait', 'fw' (for FrankWolfe), 'maxdist', 'kmeanspp', 'lcmd'
         and the experimental options 'fw-kernel' (for FrankWolfe in kernel space, slow!), 'rmds' and 'sosd' (slow!)
         :param batch_size: Number of samples to select from the pool set.
         :param precomp_batch_size: Batch size used for precomputations of the features.
@@ -205,6 +207,7 @@ class BatchSelectorImpl:
                                 By the default value of this argument, nn.Linear layers also will be used for gradients.
         verbosity=<int> (default=1): Allows to control how much information will be printed.
                                      Set to a value <= 0 if no information should be printed.
+        use_cuda_synchronize=True: Use CUDA synchronize for more accurate time measurements.
 
         There are a few other options, e.g. for the nngp and ntk kernels,
         which can be found by searching for usages of 'config' in the source code.
@@ -225,13 +228,16 @@ class BatchSelectorImpl:
         torch.backends.cuda.matmul.allow_tf32 = False  # do not use tf32 since it causes large numerical errors
 
         if config.get('allow_float64', False):
-            use_float64 = (selection_method == 'maxdet')
+            use_float64 = (selection_method in ['maxdet', 'bait'])
 
             for tfm_name, tfm_args in kernel_transforms:
-                if tfm_name in ['train', 'acs-rf', 'acs-rf-hyper', 'acs-grad']:
+                if tfm_name in ['train', 'pool', 'acs-rf', 'acs-rf-hyper', 'acs-grad']:
                     use_float64 = True
         else:
             use_float64 = False
+
+        if config.get('use_cuda_synchronize', False):
+            torch.cuda.synchronize(self.device)
 
         kernel_timer = utils.Timer()
         kernel_timer.start()
@@ -347,6 +353,9 @@ class BatchSelectorImpl:
         for i in range(self.n_models):
             self.apply_tfm(i, PrecomputeTransform(batch_size=precomp_batch_size))
 
+        if config.get('use_cuda_synchronize', False):
+            torch.cuda.synchronize(self.device)
+
         kernel_timer.pause()
 
         eff_dim = None
@@ -362,6 +371,9 @@ class BatchSelectorImpl:
                     eff_dim = (torch.trace(cov_matrix) / (torch.abs(largest_eigval) + 1e-30)).item()
                 except Exception as e:
                     pass
+
+        if config.get('use_cuda_synchronize', False):
+            torch.cuda.synchronize(self.device)
 
         selection_timer = utils.Timer()
         selection_timer.start()
@@ -387,6 +399,9 @@ class BatchSelectorImpl:
             else:
                 alg = MaxDetSelectionMethod(self.features['pool'], self.features['train'],
                                             noise_sigma=config.get('maxdet_sigma', 0.0), **config)
+        elif selection_method == 'bait':
+            alg = BaitFeatureSpaceSelectionMethod(self.features['pool'], self.features['train'],
+                                            noise_sigma=config.get('bait_sigma', 0.0), **config)
         elif selection_method == 'maxdist':
             alg = MaxDistSelectionMethod(self.features['pool'], self.features['train'], **config)
         elif selection_method == 'lcmd':
@@ -408,6 +423,9 @@ class BatchSelectorImpl:
             raise ValueError(f'Unknown selection method "{selection_method}"')
 
         batch_idxs = alg.select(batch_size)
+
+        if config.get('use_cuda_synchronize', False):
+            torch.cuda.synchronize(self.device)
 
         selection_timer.pause()
 

@@ -17,14 +17,13 @@ class ModelTrainer:
         result_file = results_path / exp_name / task_name / self.alg_name / str(split_id) / 'results.json'
         return result_file
 
-    def __call__(self, task_split: TaskSplit, device: str):
+    def __call__(self, task_split: TaskSplit, device: str, do_timing: bool = False):
         # results_path = Path(custom_paths.get_results_path())
         # result_file = results_path / task_split.task_name / self.alg_name / str(task_split.id) / 'results.json'
         al_device = 'cpu' if self.config.get('al_on_cpu', False) else device
 
         # can lead to imprecise distance calculations otherwise on devices with TF32
         torch.backends.cuda.matmul.allow_tf32 = False
-
 
         # if utils.existsFile(result_file) and not self.config.get('rerun', False):
         #     print(f'Results already exist for {self.alg_name} on split {task_split.id} of task {task_split.task_name}',
@@ -80,6 +79,7 @@ class ModelTrainer:
 
                 al_timer.start()
                 new_idxs, al_stats = select_batch(models=single_models, data=feature_data, y_train=y_train,
+                                                  use_cuda_synchronize=do_timing,
                                                   **utils.update_dict(self.config, {'batch_size': al_batch_size}))
                 al_timer.pause()
                 al_stats_list.append(al_stats)

@@ -7,8 +7,18 @@ class LayerGradientComputation:
     Abstract base class that can be used as a second base class
     for layers that support the computation of gradient features
     """
-    def __init__(self):
+    def __init__(self, layer: nn.Module):
+        """
+        :param layer: Layer that this LayerGradientComputation computes gradients of.
+        """
+        self.layers = [layer]  # dirty hack to avoid infinite recursion in PyTorch if layer is self.
         super().__init__()   # in case this is used with multiple inheritance
+
+    def get_layer(self) -> nn.Module:
+        """
+        :return: Returns the layer that this LayerGradientComputation computes gradients of.
+        """
+        return self.layers[0]
 
     def get_feature_map(self) -> FeatureMap:
         """
@@ -46,6 +56,9 @@ class ModelGradTransform(DataTransform):
         """
         self.model = model
         self.grad_layers = grad_layers
+        self.requires_grad_list = [any([any([p is gl_p for gl_p in gl.get_layer().parameters()]) for gl in grad_layers])
+                                   for p in model.parameters()]
+        self.grad_params = [p for grad_layer in grad_layers for p in grad_layer.get_layer().parameters()]
 
     def forward(self, feature_data: FeatureData, idxs: Indexes) -> FeatureData:
         """
@@ -55,6 +68,11 @@ class ModelGradTransform(DataTransform):
         """
         for grad_layer in self.grad_layers:
             grad_layer.before_forward()
+
+        # only set requires_grad=True for those parameters that need one
+        requires_grad_before_list = [p.requires_grad for p in self.model.parameters()]
+        for p, requires_grad in zip(self.model.parameters(), self.requires_grad_list):
+            p.requires_grad = requires_grad
 
         old_training = self.model.training
         self.model.eval()
@@ -68,6 +86,9 @@ class ModelGradTransform(DataTransform):
         self.model.train(old_training)
 
         data = ListFeatureData([layer_comp.pop_feature_data() for layer_comp in self.grad_layers])
+
+        for p, value in zip(self.model.parameters(), requires_grad_before_list):
+            p.requires_grad = value
 
         return data
 
@@ -107,8 +128,7 @@ class GeneralLinearGradientComputation(LayerGradientComputation):
         :param weight_factor: Factor sigma_w by which the weight matrix is multiplied in the forward pass.
         :param bias_factor: Factor sigma_w by which the bias is multiplied in the forward pass.
         """
-        super().__init__()
-        self.layers = [layer]  # dirty hack to avoid infinite recursion in PyTorch if layer is self.
+        super().__init__(layer)
         self.in_features = in_features
         self.out_features = out_features
         self.weight_factor = weight_factor
@@ -135,9 +155,9 @@ class GeneralLinearGradientComputation(LayerGradientComputation):
 
     def before_forward(self):
         # sets up hooks that store the input and grad_output
-        self._input_hook = self.layers[0].register_forward_hook(
+        self._input_hook = self.get_layer().register_forward_hook(
                 lambda layer, inp, output, s=self: s.set_input_(inp[0].detach().clone()))
-        self._grad_output_hook = self.layers[0].register_full_backward_hook(
+        self._grad_output_hook = self.get_layer().register_full_backward_hook(
                 lambda layer, grad_input, grad_output, s=self: s.set_grad_output_(grad_output[0].detach().clone()))
 
     def pop_feature_data(self) -> FeatureData:

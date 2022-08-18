@@ -189,6 +189,12 @@ class Features:
         """
         return self.feature_data.get_device()
 
+    def get_dtype(self) -> Any:
+        """
+        :return: Returns the (torch) dtype that the feature data has.
+        """
+        return self.feature_data.get_dtype()
+
     def __getitem__(self, idxs: Union[int, slice, torch.Tensor]) -> 'Features':
         """
         Returns a Features object where the feature data is indexed by idxs. Note that if idxs is an integer,

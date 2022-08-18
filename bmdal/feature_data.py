@@ -133,13 +133,15 @@ class FeatureData:
     """
     Abstract base class for classes that represent data that serves as input to feature maps.
     """
-    def __init__(self, n_samples: int, device: str):
+    def __init__(self, n_samples: int, device: str, dtype):
         """
         :param n_samples: Number of samples represented by this FeatureData object.
         :param device: String representing the torch device that this feature data is located on.
+        :param dtype: Torch dtype that the feature data has
         """
         self.n_samples = n_samples
         self.device = device
+        self.dtype = dtype
 
     def get_n_samples(self) -> int:
         """
@@ -152,6 +154,12 @@ class FeatureData:
         :return: Returns the device that the data is on.
         """
         return self.device
+
+    def get_dtype(self) -> Any:
+        """
+        :return: Returns the (torch) dtype that the feature data has.
+        """
+        return self.dtype
 
     def __len__(self) -> int:
         """
@@ -283,14 +291,14 @@ class EmptyFeatureData(FeatureData):
     This is used internally during simplification and should not matter to users.
     Some methods like get_tensor() may not work for this class.
     """
-    def __init__(self, device: str):
-        super().__init__(n_samples=0, device=device)
+    def __init__(self, device: str, dtype):
+        super().__init__(n_samples=0, device=device, dtype=dtype)
 
     def simplify_impl_(self, idxs: Indexes) -> 'FeatureData':
         return self
 
     def simplify_multi_(self, feature_data_list: List['EmptyFeatureData'], idxs_list: List[Indexes]) -> 'FeatureData':
-        return EmptyFeatureData(device=self.device)
+        return EmptyFeatureData(device=self.device, dtype=self.dtype)
 
     def cast_to(self, dtype) -> 'FeatureData':
         return self
@@ -304,7 +312,7 @@ class TensorFeatureData(FeatureData):
         """
         :param data: Tensor of shape [n_samples, ...], usually [n_samples, n_features]
         """
-        super().__init__(n_samples=data.shape[-2], device=data.device)
+        super().__init__(n_samples=data.shape[-2], device=data.device, dtype=data.dtype)
         self.data = data
 
     def get_tensor_impl_(self, idxs: Indexes) -> torch.Tensor:
@@ -331,7 +339,7 @@ class SubsetFeatureData(FeatureData):
         :param feature_data: FeatureData which this object represents a subset of
         :param idxs: Indexes object representing the subset of indexes.
         """
-        super().__init__(n_samples=len(idxs), device=feature_data.get_device())
+        super().__init__(n_samples=len(idxs), device=feature_data.get_device(), dtype=feature_data.get_dtype())
         self.idxs = idxs
         self.feature_data = feature_data
 
@@ -362,7 +370,8 @@ class ConcatFeatureData(FeatureData):
         :param feature_data_list: List of feature data objects that should be (virtually) concatenated.
         """
         sample_sizes = [fd.get_n_samples() for fd in feature_data_list]
-        super().__init__(n_samples=sum(sample_sizes), device=feature_data_list[0].get_device())
+        super().__init__(n_samples=sum(sample_sizes), device=feature_data_list[0].get_device(),
+                         dtype=feature_data_list[0].get_dtype())
         self.feature_data_list = feature_data_list
         self.sample_sizes = sample_sizes
 
@@ -415,7 +424,7 @@ class BatchedFeatureData(FeatureData):
         :param batch_size: Batch size. The last batch is smaller
         if len(feature_data) is not divisible by batch_size.
         """
-        super().__init__(n_samples=len(feature_data), device=feature_data.get_device())
+        super().__init__(n_samples=len(feature_data), device=feature_data.get_device(), dtype=feature_data.get_dtype())
         self.feature_data = feature_data
         self.batch_size = batch_size
         batch_intervals = utils.get_batch_intervals(self.n_samples, batch_size=batch_size)
@@ -453,7 +462,8 @@ class ListFeatureData(FeatureData):  # does not concatenate along batch dimensio
         """
         :param feature_data_list: List of feature data objects.
         """
-        super().__init__(n_samples=feature_data_list[0].get_n_samples(), device=feature_data_list[0].get_device())
+        super().__init__(n_samples=feature_data_list[0].get_n_samples(), device=feature_data_list[0].get_device(),
+                         dtype=feature_data_list[0].get_dtype())
         self.feature_data_list = feature_data_list
 
     def get_tensor(self, idxs: Optional[Union[torch.Tensor, slice, int, Indexes]] = None) -> torch.Tensor:
@@ -465,7 +475,7 @@ class ListFeatureData(FeatureData):  # does not concatenate along batch dimensio
 
     def simplify_multi_(self, feature_data_list: List['ListFeatureData'], idxs_list: List[Indexes]) -> 'FeatureData':
         if len(feature_data_list) == 0:
-            return EmptyFeatureData(device=self.device)
+            return EmptyFeatureData(device=self.device, dtype=self.dtype)
         return ListFeatureData([ConcatFeatureData([fd.feature_data_list[i][idxs]
                                                    for fd, idxs in zip(feature_data_list, idxs_list)]).simplify()
                                 for i in range(len(feature_data_list[0].feature_data_list))])

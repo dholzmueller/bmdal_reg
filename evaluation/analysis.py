@@ -218,6 +218,8 @@ def get_latex_task(task: str) -> str:
 def get_latex_selection_method(selection_method: str) -> str:
     conversion_dict = {'random': r'\textsc{Random}',
                        'fw': r'\textsc{FrankWolfe}',
+                       'bait-f': r'\textsc{Bait-F}',
+                       'bait-fb': r'\textsc{Bait-FB}',
                        'kmeanspp': r'\textsc{KMeansPP}',
                        'lcmd': r'\textsc{LCMD}',
                        'maxdet': r'\textsc{MaxDet}',
@@ -226,10 +228,10 @@ def get_latex_selection_method(selection_method: str) -> str:
                        }
 
     parts = selection_method.split('-')
-    method_name = parts[0]
+    method_name = '-'.join(parts[:-1]) if len(parts) > 1 else selection_method
     result = conversion_dict[method_name]
     if len(parts) > 1:
-        result += '-TP' if parts[1] == 'tp' else '-P'
+        result += '-TP' if parts[-1] == 'tp' else '-P'
     if method_name == 'lcmd':
         result += ' (ours)'
     return result
@@ -238,7 +240,7 @@ def get_latex_selection_method(selection_method: str) -> str:
 def get_latex_kernel(base_kernel: str, kernel_transformations: List[Tuple[str, List]], n_models: int) -> str:
     conversion_base_kernel_dict = {'grad': r'\mathrm{grad}',
                                    'll': r'\mathrm{ll}',
-                                   'linear': r'\mathrm{linear}',
+                                   'linear': r'\mathrm{lin}',
                                    'nngp': r'\mathrm{nngp}'}
 
     steps = [conversion_base_kernel_dict[base_kernel]]
@@ -300,7 +302,7 @@ def save_latex_table_all_algs(results: ExperimentResults, filename: str):
     table_footer = '\n\\end{tabular}'
 
     # raw_sel_order = {'random': 0, 'maxdiag': 1, 'maxdet': 2, 'fw': 3, 'maxdist': 4, 'kmeanspp': 5, 'lcmd': 6}
-    sel_name_order = ['random', 'maxdiag', 'maxdet', 'fw', 'maxdist', 'kmeanspp', 'lcmd']
+    sel_name_order = ['random', 'maxdiag', 'maxdet', 'bait', 'fw', 'maxdist', 'kmeanspp', 'lcmd']
 
     raw_sel_names = {}
 
@@ -385,6 +387,13 @@ def save_latex_table_data_sets(results: ExperimentResults, filename: str, use_lo
 
 
 def print_single_task_results(exp_results: ExperimentResults, task_name: str):
+    """
+    Prints results for a single task. For each log metric value, the function prints
+    mean +- standard error (estimated standard deviation of the mean estimator,
+    when considering the data sets to be fixed)
+    :param exp_results: ExperimentResults object whose results should be printed.
+    :param task_name: Task for which the results should be printed.
+    """
     metric_names = ['mae', 'rmse', 'q95', 'q99', 'maxe']
 
     print(f'Results for task {task_name}:')
@@ -415,6 +424,17 @@ def print_all_task_results(exp_results: ExperimentResults):
 
 def print_avg_results(exp_results: ExperimentResults, relative_to: Optional[str] = None,
                       filter_suffix: str = '256x16'):
+    """
+    Prints experiment results averaged over splits, steps and data sets.
+    :param exp_results: ExperimentResults object whose results should be printed.
+    :param relative_to: alg_name (or part thereof) of a method that results should be compared to.
+    If None, the log metric values are printed directly +- the standard error where the data sets are considered fixed.
+    Otherwise, the difference in log metric values between the respective method and the relative_to method is printed,
+    +- the standard error thereof where the data sets are considered to be randomly drawn.
+    In the latter case, the standard error is going to be larger
+    but indicates how strongly the relative performance varies across data sets.
+    :param filter_suffix: Only tasks with this suffix are going to be analyzed.
+    """
     if relative_to is not None:
         print(f'Averaged results across tasks, relative to {relative_to}:')
     else:
