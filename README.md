@@ -1,4 +1,5 @@
 # Deep Batch Active Learning for Regression
+[![Identifier](https://img.shields.io/badge/doi-10.18419%2Fdarus--807-d45815.svg)](https://doi.org/10.18419/darus-3110)
 
 This repository contains code accompanying our paper ["A Framework and Benchmark for Deep Batch Active Learning for Regression"](https://arxiv.org/abs/2203.09410). It can be used to apply various pool-based Batch Mode Deep Active Learning (BMDAL) algorithms for regression to custom networks or to compare BMDAL algorithms using our benchmark. 
 
