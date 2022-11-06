@@ -83,7 +83,7 @@ The code is structured as follows:
 
 ## Contributors
 
-- [David Holzmüller](https://www.isa.uni-stuttgart.de/institut/team/Holzmueller/) (main developer)
+- [David Holzmüller](https://www.isa.uni-stuttgart.de/en/institute/team/Holzmueller/) (main developer)
 - [Viktor Zaverkin](https://www.itheoc.uni-stuttgart.de/institute/team/Zaverkin/) (contributed to the evaluation code)
 
 If you would like to contribute to the code or would be interested in additional features, please contact David Holzmüller.
