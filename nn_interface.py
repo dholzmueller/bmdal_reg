@@ -54,12 +54,15 @@ class NNRegressor:
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         n_features = X.shape[1]
+        if len(y.shape) == 1:
+            y = y[:, None]
+        n_outputs = y.shape[1]
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
 
         self.model = create_tabular_model(n_models=self.n_models, n_features=n_features,
                                           hidden_sizes=self.hidden_sizes,
-                                          act=self.act,
+                                          act=self.act, n_outputs=n_outputs,
                                           weight_gain=self.weight_gain, bias_gain=self.bias_gain).to(self.device)
 
         X = torch.as_tensor(X, dtype=torch.float).to(self.device)
