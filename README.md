@@ -1,7 +1,13 @@
 # Deep Batch Active Learning for Regression
 [![Identifier](https://img.shields.io/badge/doi-10.18419%2Fdarus--807-d45815.svg)](https://doi.org/10.18419/darus-3110)
 
-This repository contains code accompanying our paper ["A Framework and Benchmark for Deep Batch Active Learning for Regression"](https://arxiv.org/abs/2203.09410). It can be used to apply various pool-based Batch Mode Deep Active Learning (BMDAL) algorithms for regression to custom networks or to compare BMDAL algorithms using our benchmark. 
+This repository contains code accompanying our paper ["A Framework and Benchmark for Deep Batch Active Learning for Regression"](https://arxiv.org/abs/2203.09410). It can be used for the following purposes:
+- Apply various pool-based Batch Mode Deep Active Learning (BMDAL) algorithms for regression to custom neural networks (NNs) or kernel methods
+- Use our NN for tabular regression through a simple scikit-learn style interface
+- Download large tabular regression data sets from our benchmark
+- Compare BMDAL algorithms using our benchmark
+
+If you use this code for research purposes, plese cite [our paper](https://arxiv.org/abs/2203.09410).
 
 ## Versions
 
@@ -15,7 +21,18 @@ This source code is licensed under the Apache 2.0 license. However, the implemen
 
 ## Installation
 
-This code has been tested with Python 3.9.2 but may be compatible with versions down to Python 3.6.
+This code has been tested with Python 3.9.2 but may be compatible with versions down to Python 3.6. 
+
+### Through pip
+For running our NN and the active learning methods, a `pip` installation is sufficient. The library can be installed via 
+```
+pip3 install bmdal_reg
+```
+When using our benchmarking code through a `pip` installation, the paths where experiment data and plots are saved can be modified through changing the corresponding path variables of `bmdal_reg.custom_paths.CustomPaths` before running the benchmark.
+
+### Manually
+
+For certain purposes, especially trying new methods and running the benchmark, it might be helpful or necessary to modify the code. For this, the code can be manually installed via cloning the [GitHub repository](https://github.com/dholzmueller/bmdal_reg) and then following the instructions below:
 
 The following packages (available through `pip`) need to be installed:
 - General: `torch`, `numpy`, `dill`
@@ -77,7 +94,7 @@ The code is structured as follows:
 - For the normalization of input data, mean and standard deviations for the features are now computed on training and pool set instead of only on the initial training set.
 - More precise runtime measurement through CUDA synchronize (only applied in one of the 20 splits where only one process is run per GPU).
 - Now, 64-bit floating point computations are used for computations involving posterior transformations. This can sometimes cause RAM overflows when using parallel execution, though. 
-- We use $\sigma^2 = 1e-6$ instead of $\sigma^2 = 1e-4$ now, which still works well due to the change to 64-bit floats.
+- We use $\sigma^2 = 10^{-6}$ instead of $\sigma^2 = 10^{-4}$ now, which still works well due to the change to 64-bit floats.
 - The computation of the last-layer kernel does not require the full backward pass now since the earlier layers set `requires_grad=False` for the computation.
 - Fixed a discrepancy between the implementation of selection methods and the corresponding paper pseudocode: Previously, some selection methods could re-select already selected samples in case of numerical issues, which triggered a code filling up the batch with random samples. Now, selecting already selected samples is explicitly prevented.
 - Changed the interface of `run_experiments.py` to be based on lists instead of callbacks.

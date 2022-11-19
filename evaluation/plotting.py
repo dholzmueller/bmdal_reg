@@ -16,9 +16,6 @@ matplotlib.rcParams.update({
 # matplotlib.rcParams.update(fontsizes.jmlr2001())
 
 import matplotlib.pyplot as plt
-from typing import *
-import numpy as np
-import custom_paths
 from .analysis import *
 from pathlib import Path
 import seaborn as sns

@@ -1,6 +1,6 @@
-from train import *
-from data import *
-from task_execution import get_devices
+from .train import *
+from .data import *
+from .task_execution import get_devices
 import time
 
 

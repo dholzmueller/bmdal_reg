@@ -1,10 +1,11 @@
 import torch
 import math
 import numpy as np
-import custom_paths
 from pathlib import Path
-import utils
 from typing import *
+
+from . import custom_paths
+from . import utils
 
 
 def batch_randperm(n_batch: int, n: int, device: str = 'cpu') -> torch.Tensor:

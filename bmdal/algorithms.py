@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layers import *
+from ..layers import *
 from .features import *
 from .selection import *
 

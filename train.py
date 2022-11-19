@@ -1,7 +1,7 @@
-from bmdal.algorithms import BatchSelectorImpl, select_batch
-from models import *
-from data import *
-import utils
+from .bmdal.algorithms import BatchSelectorImpl, select_batch
+from .models import *
+from .data import *
+from . import utils
 from pathlib import Path
 
 

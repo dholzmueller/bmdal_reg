@@ -1,4 +1,4 @@
-from layers import *
+from .layers import *
 
 
 def create_tabular_model(n_models, n_features, hidden_sizes=[512]*2, act='relu', n_outputs: int = 1, **config):

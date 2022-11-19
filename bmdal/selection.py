@@ -1,11 +1,11 @@
 from abc import ABC
+import numpy as np
 
 import torch
 from typing import *
 
-import utils
+from .. import utils
 from .features import *
-import numpy as np
 
 
 class SelectionMethod:

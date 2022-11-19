@@ -1,6 +1,6 @@
-from task_execution import *
-from train import ModelTrainer
-from data import *
+from .task_execution import *
+from .train import ModelTrainer
+from .data import *
 
 
 # maybe some functionality for Runner to rerun if necessary but not print message that they are already exist if they do

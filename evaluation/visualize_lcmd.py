@@ -2,7 +2,6 @@ from pathlib import Path
 
 import matplotlib
 #matplotlib.use('Agg')
-import custom_paths
 
 matplotlib.use('pdf')
 matplotlib.rcParams.update({
@@ -16,7 +15,9 @@ matplotlib.rcParams.update({
 })
 import matplotlib.pyplot as plt
 import numpy as np
-import utils
+
+from .. import utils
+from .. import custom_paths
 
 
 def get_data(n_train, n_pool):

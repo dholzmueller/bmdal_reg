@@ -1,6 +1,6 @@
 import sys
-from evaluation.plotting import *
-from evaluation.visualize_lcmd import create_lcmd_plots
+from .evaluation.plotting import *
+from .evaluation.visualize_lcmd import create_lcmd_plots
 
 
 def plot_all(results: ExperimentResults, alg_names: List[str], with_batch_size_plots: bool = True):

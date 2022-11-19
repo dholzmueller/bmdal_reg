@@ -1,11 +1,11 @@
-import utils
-from train import *
 import time
 import dill
 import torch.multiprocessing as mp
 import os
 import sys
 import traceback
+
+from .train import *
 
 
 def get_cuda_devices():

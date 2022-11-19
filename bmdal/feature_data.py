@@ -1,7 +1,7 @@
 from typing import *
 import torch
 
-import utils
+from .. import utils
 
 
 def torch_cat(tensors: List[torch.Tensor], dim: int):

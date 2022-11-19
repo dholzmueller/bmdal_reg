@@ -1,8 +1,9 @@
-import custom_paths
 from pathlib import Path
-import utils
 import shutil
 from typing import *
+
+from . import custom_paths
+from . import utils
 
 # This file contains some utility functions to modify/rename/remove saved results.
 # It can be used for example if the names of some experiment results should be changed.

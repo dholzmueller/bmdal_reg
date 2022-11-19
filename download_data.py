@@ -3,12 +3,13 @@ import numpy as np
 import requests
 import shutil
 from typing import *
-
-import custom_paths
-import utils
-from data import DataInfo
 import openml
 import mat4py
+
+from . import custom_paths
+from . import utils
+from .data import DataInfo
+
 
 
 def download_if_not_exists(url: str, dest: str):

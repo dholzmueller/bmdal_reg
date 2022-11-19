@@ -1,11 +1,11 @@
 import numpy as np
 import torch
-
-from data import DictDataset, ParallelDictDataLoader
-from models import create_tabular_model
-from task_execution import get_devices
-from train import fit_model
 from typing import List
+
+from .data import DictDataset, ParallelDictDataLoader
+from .models import create_tabular_model
+from .task_execution import get_devices
+from .train import fit_model
 
 
 class NNRegressor:

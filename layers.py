@@ -1,7 +1,6 @@
 import torch.distributions
-import torch.nn as nn
-from bmdal.layer_features import *
 import numpy as np
+from .bmdal.layer_features import *
 
 
 class SplittableModule(nn.Module):

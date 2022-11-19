@@ -1,5 +1,6 @@
-from .feature_maps import *
 import torch.nn as nn
+
+from .feature_maps import *
 
 
 class LayerGradientComputation:

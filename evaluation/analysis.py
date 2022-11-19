@@ -1,10 +1,10 @@
-import custom_paths
-import utils
 import numpy as np
 from typing import *
 from pathlib import Path
 import os
 
+from .. import custom_paths
+from .. import utils
 
 class ExperimentResults:
     def __init__(self, results_dict: dict, exp_name: str):

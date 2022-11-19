@@ -1,9 +1,9 @@
-from train import *
-from data import *
-from task_execution import get_devices
 from multiprocessing.pool import Pool
 import multiprocessing as mp
 
+from .train import *
+from .data import *
+from .task_execution import get_devices
 
 # This file can be used to check how much the error for random selection drops on different data sets
 # when increasing the training set size.
