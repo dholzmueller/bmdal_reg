@@ -1,7 +1,8 @@
-from .train import *
-from .data import *
-from .task_execution import get_devices
+from bmdal_reg.data import Task, TaskSplit
+from bmdal_reg.task_execution import get_devices
+from bmdal_reg.train import ModelTrainer
 import time
+
 
 
 def run_single_task():

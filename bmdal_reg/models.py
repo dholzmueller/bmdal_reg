@@ -1,4 +1,4 @@
-from .layers import *
+from bmdal_reg.layers import ParallelLinearLayer, get_parallel_act_layer, ParallelSequential
 
 
 def create_tabular_model(n_models, n_features, hidden_sizes=[512]*2, act='relu', n_outputs: int = 1, **config):

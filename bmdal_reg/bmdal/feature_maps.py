@@ -1,6 +1,5 @@
 import math
 
-from .. import utils
 from .feature_data import *
 
 

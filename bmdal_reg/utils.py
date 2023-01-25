@@ -107,6 +107,21 @@ def serialize(filename, obj, compressed=False, use_json=False):
     file.close()
 
 
+class CustomUnpickler(dill.Unpickler):
+    """
+    Search for classes also in the bmdal_reg module
+    in case the objects have been pickled before moving the code to a dedicated bmdal_reg module.
+    See https://stackoverflow.com/questions/2121874/python-pickling-after-changing-a-modules-directory
+    """
+    def find_class(self, module, name):
+        try:
+            return super().find_class(module, name)
+        except:
+            pass
+
+        return super().find_class('bmdal_reg.' + module, name)
+
+
 def deserialize(filename, compressed=False, use_json=False):
     # json only works for nested dicts
     if compressed:
@@ -116,7 +131,8 @@ def deserialize(filename, compressed=False, use_json=False):
     if use_json:
         result = json.load(file)
     else:
-        result = dill.load(file)
+        # result = dill.load(file)
+        result = CustomUnpickler(file).load()
     file.close()
     return result
 

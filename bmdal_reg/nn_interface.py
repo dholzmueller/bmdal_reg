@@ -39,7 +39,7 @@ class NNRegressor:
         self.act = act
         self.weight_gain = weight_gain
         self.bias_gain = bias_gain
-        self.model = None
+        self.model_ = None
         self.valid_fraction = valid_fraction
         self.device = device or get_devices()[0]
         self.seed = seed
@@ -47,10 +47,10 @@ class NNRegressor:
         self.n_epochs = n_epochs
         self.weight_decay = weight_decay
         self.preprocess_data = preprocess_data
-        self.means = None
-        self.stds = None
-        self.y_mean = None
-        self.y_std = None
+        self.means_ = None
+        self.stds_ = None
+        self.y_mean_ = None
+        self.y_std_ = None
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         n_features = X.shape[1]
@@ -60,22 +60,22 @@ class NNRegressor:
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
 
-        self.model = create_tabular_model(n_models=self.n_models, n_features=n_features,
-                                          hidden_sizes=self.hidden_sizes,
-                                          act=self.act, n_outputs=n_outputs,
-                                          weight_gain=self.weight_gain, bias_gain=self.bias_gain).to(self.device)
+        self.model_ = create_tabular_model(n_models=self.n_models, n_features=n_features,
+                                           hidden_sizes=self.hidden_sizes,
+                                           act=self.act, n_outputs=n_outputs,
+                                           weight_gain=self.weight_gain, bias_gain=self.bias_gain).to(self.device)
 
         X = torch.as_tensor(X, dtype=torch.float).to(self.device)
         y = torch.as_tensor(y, dtype=torch.float).to(self.device)
 
         if self.preprocess_data:
-            self.means = X.mean(dim=0, keepdim=True)
-            self.stds = X.std(dim=0, keepdim=True)
-            self.y_mean = y.mean().item()
-            self.y_std = y.std().item()
-            X = (X - self.means) / (self.stds + 1e-30)
+            self.means_ = X.mean(dim=0, keepdim=True)
+            self.stds_ = X.std(dim=0, keepdim=True)
+            self.y_mean_ = y.mean().item()
+            self.y_std_ = y.std().item()
+            X = (X - self.means_) / (self.stds_ + 1e-30)
             X = 5 * torch.tanh(0.2 * X)
-            y = (y - self.y_mean) / (self.y_std + 1e-30)
+            y = (y - self.y_mean_) / (self.y_std_ + 1e-30)
 
         data = DictDataset({'X': X, 'y': y})
         n_valid = int(self.valid_fraction * X.shape[0])
@@ -83,7 +83,7 @@ class NNRegressor:
         valid_idxs = torch.as_tensor(perm[:n_valid]).to(self.device)
         train_idxs = torch.as_tensor(perm[n_valid:]).to(self.device)
 
-        fit_model(self.model, data, n_models=self.n_models, train_idxs=train_idxs, valid_idxs=valid_idxs,
+        fit_model(self.model_, data, n_models=self.n_models, train_idxs=train_idxs, valid_idxs=valid_idxs,
                   n_epochs=self.n_epochs, batch_size=self.batch_size, lr=self.lr,
                   weight_decay=self.weight_decay, valid_batch_size=8192)
 
@@ -91,7 +91,7 @@ class NNRegressor:
         X = torch.as_tensor(X, dtype=torch.float).to(self.device)
 
         if self.preprocess_data:
-            X = (X - self.means) / (self.stds + 1e-30)
+            X = (X - self.means_) / (self.stds_ + 1e-30)
             X = 5 * torch.tanh(0.2 * X)
 
         data = DictDataset({'X': X})
@@ -100,11 +100,11 @@ class NNRegressor:
         dl = ParallelDictDataLoader(data, idxs.expand(self.n_models, -1), batch_size=8192, shuffle=False,
                                          adjust_bs=False, drop_last=False)
         with torch.no_grad():
-            self.model.eval()
-            y_pred = torch.cat([self.model(batch['X']) for batch in dl], dim=1).mean(dim=0)
+            self.model_.eval()
+            y_pred = torch.cat([self.model_(batch['X']) for batch in dl], dim=1).mean(dim=0)
 
         if self.preprocess_data:
-            y_pred = y_pred * self.y_std + self.y_mean
+            y_pred = y_pred * self.y_std_ + self.y_mean_
 
         return y_pred.detach().cpu().numpy()
 

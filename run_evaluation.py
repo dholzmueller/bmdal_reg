@@ -1,9 +1,12 @@
 import sys
-from .evaluation.plotting import *
-from .evaluation.visualize_lcmd import create_lcmd_plots
+
+from bmdal_reg.evaluation.analysis import save_latex_table_all_algs, save_latex_table_data_sets, print_avg_results
+from bmdal_reg.evaluation.plotting import *
+from bmdal_reg.evaluation.visualize_lcmd import create_lcmd_plots
 
 
-def plot_all(results: ExperimentResults, alg_names: List[str], with_batch_size_plots: bool = True):
+def plot_all(results: ExperimentResults, alg_names: List[str], with_batch_size_plots: bool = True,
+             with_learning_curve_std_errors: bool = True):
     selected_results = results.filter_alg_names(alg_names)
     literature_results = results.filter_alg_names(['NN_random', 'NN_maxdiag_ll_train', 'NN_maxdet-p_ll_train',
                                                    'NN_bait-fb-p_ll_train',
@@ -20,24 +23,27 @@ def plot_all(results: ExperimentResults, alg_names: List[str], with_batch_size_p
                                use_last_error=True)
 
     print('Creating learning curve plots...')
-    plot_learning_curves_metrics_subplots(results=selected_results, filename='learning_curves_metrics.pdf')
+    plot_learning_curves_metrics_subplots(results=selected_results, filename='learning_curves_metrics.pdf',
+                                          with_std_errors=with_learning_curve_std_errors)
     plot_multiple_learning_curves(results=selected_results, filename='learning_curves_rmse_maxe.pdf',
-                                  metric_names=['rmse', 'maxe'])
+                                  metric_names=['rmse', 'maxe'], with_std_errors=with_learning_curve_std_errors)
     plot_multiple_learning_curves(results=selected_results, filename='learning_curves_q95_q99.pdf',
-                                  metric_names=['q95', 'q99'])
+                                  metric_names=['q95', 'q99'], with_std_errors=with_learning_curve_std_errors)
     for metric_name in metric_names:
         plot_learning_curves(results=selected_results, filename=f'learning_curves_{metric_name}.pdf',
-                             metric_name=metric_name)
+                             metric_name=metric_name, with_std_errors=with_learning_curve_std_errors)
         plot_learning_curves(results=literature_results, filename=f'learning_curves_literature_{metric_name}.pdf',
-                             metric_name=metric_name, labels=literature_names, figsize=(6, 5))
+                             metric_name=metric_name, labels=literature_names, figsize=(6, 5),
+                             with_std_errors=with_learning_curve_std_errors)
         plot_learning_curves(results=literature_results, filename=f'learning_curves_literature_wide_{metric_name}.pdf',
-                             metric_name=metric_name, labels=literature_names, figsize=(6, 3.5))
+                             metric_name=metric_name, labels=literature_names, figsize=(6, 3.5),
+                             with_std_errors=with_learning_curve_std_errors)
 
     print('Creating individual learning curve plots with subplots...')
     for metric_name in ['mae', 'rmse', 'q95', 'q99', 'maxe']:
         plot_learning_curves_individual_subplots(results=selected_results,
                                                  filename=f'learning_curves_individual_{metric_name}.pdf',
-                                                 metric_name=metric_name)
+                                                 metric_name=metric_name, with_std_errors=with_learning_curve_std_errors)
     print('Creating error variation plots...')
     plot_error_variation(results, 'skewness_ri_lcmd-tp_grad_rp-512.pdf', metric_name='rmse', alg_name='NN_lcmd-tp_grad_rp-512',
                          use_relative_improvement=True)
@@ -49,7 +55,8 @@ def plot_all(results: ExperimentResults, alg_names: List[str], with_batch_size_p
                                          metric_name=metric_name)
     print('Creating individual learning curve plots...')
     for metric_name in ['mae', 'rmse', 'q95', 'q99', 'maxe']:
-        plot_learning_curves_individual(results=selected_results, metric_name=metric_name)
+        plot_learning_curves_individual(results=selected_results, metric_name=metric_name,
+                                        with_std_errors=with_learning_curve_std_errors)
 
     if with_batch_size_plots:
         # batch size plots

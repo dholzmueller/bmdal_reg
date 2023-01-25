@@ -16,8 +16,7 @@ matplotlib.rcParams.update({
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .. import utils
-from .. import custom_paths
+from .. import utils, custom_paths
 
 
 def get_data(n_train, n_pool):

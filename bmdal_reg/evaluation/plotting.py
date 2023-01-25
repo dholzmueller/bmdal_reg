@@ -1,4 +1,12 @@
+from typing import Union, Optional, Tuple, List
+
 import matplotlib
+import numpy as np
+from bmdal_reg import utils, custom_paths
+from bmdal_reg.evaluation.analysis import ExperimentResults, get_latex_selection_method, get_latex_metric_name, \
+    get_latex_ds_name, get_latex_task
+import scipy.stats
+
 #matplotlib.use('Agg')
 matplotlib.use('pdf')
 matplotlib.rcParams.update({
@@ -16,7 +24,6 @@ matplotlib.rcParams.update({
 # matplotlib.rcParams.update(fontsizes.jmlr2001())
 
 import matplotlib.pyplot as plt
-from .analysis import *
 from pathlib import Path
 import seaborn as sns
 
@@ -212,9 +219,10 @@ def plot_batch_sizes_metrics_subplots(results: ExperimentResults, filename: Unio
 
 
 def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_name: str, with_random_final: bool = True,
-                            set_ticks_and_labels: bool = True, labels: Optional[List[str]] = None, **plot_options):
-    learning_curves = results.get_learning_curves(metric_name)
-
+                            set_ticks_and_labels: bool = True, labels: Optional[List[str]] = None,
+                            with_std_errors: bool = False, **plot_options):
+    # learning_curves = results.get_learning_curves(metric_name)
+    log_values = results.get_learning_curves_splits(metric_name)
     # https://stackoverflow.com/questions/42086276/get-default-line-colour-cycle
     # default matplotlib colors:
     # colors = [u'#1f77b4', u'#ff7f0e', u'#2ca02c', u'#d62728', u'#9467bd', u'#8c564b', u'#e377c2', u'#7f7f7f',
@@ -227,21 +235,38 @@ def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_nam
     color_idx = 0
 
     for i, alg_name in enumerate(results.alg_names):
-        log_means = [learning_curves.results_dict[alg_name][ds_name + '_256x16'] for ds_name in ds_names]
-        results_list = np.mean(log_means, axis=0)
-        n_train = np.asarray([256*(i+1) for i in range(len(results_list))])
+        # shape: len(ds_names) x n_splits x n_train_steps
+        alg_ds_ntrain_log_values = np.asarray([log_values.results_dict[alg_name][ds_name+'_256x16']
+                                               for ds_name in ds_names])
+        n_splits = alg_ds_ntrain_log_values.shape[1]
+
+        # shape: n_train_steps
+        means = np.mean(np.mean(alg_ds_ntrain_log_values, axis=1), axis=0)
+        # shape: n_train_steps
+        # see Appendix E.4
+        std_errors = np.linalg.norm(np.std(alg_ds_ntrain_log_values, axis=1) / np.sqrt(n_splits-1), axis=0) / len(ds_names)
+
+        # log_means = [learning_curves.results_dict[alg_name][ds_name + '_256x16'] for ds_name in ds_names]
+        # results_list = np.mean(log_means, axis=0)
+        n_train = np.asarray([256*(i+1) for i in range(len(means))])
 
         plot_options = utils.update_dict(dict(alpha=1.0, markersize=3.5), plot_options)
 
         label = get_latex_selection_method(alg_name.split('_')[1]) if labels is None else labels[i]
 
         if alg_name == 'NN_random':
-            ax.plot(np.log(n_train), results_list, '--o', color='k', label=label, **plot_options)
+            if with_std_errors:
+                ax.fill_between(np.log(n_train), means - std_errors, means + std_errors, facecolor='k',
+                                alpha=0.2)
+            ax.plot(np.log(n_train), means, '--o', color='k', label=label, **plot_options)
             if with_random_final:
-                ax.plot([np.log(n_train[0]), np.log(n_train[-1])], [results_list[-1], results_list[-1]],
+                ax.plot([np.log(n_train[0]), np.log(n_train[-1])], [means[-1], means[-1]],
                         '--', color='k', **plot_options)
         else:
-            ax.plot(np.log(n_train), results_list, '--', marker=markers[color_idx], color=colors[color_idx],
+            if with_std_errors:
+                ax.fill_between(np.log(n_train), means - std_errors, means + std_errors, facecolor=colors[color_idx],
+                                alpha=0.2)
+            ax.plot(np.log(n_train), means, '--', marker=markers[color_idx], color=colors[color_idx],
                     label=label, **plot_options)
             color_idx += 1
 
@@ -257,11 +282,12 @@ def plot_learning_curves_ax(ax: plt.Axes, results: ExperimentResults, metric_nam
 
 
 def plot_learning_curves(results: ExperimentResults, filename: Union[str, Path], metric_name: str,
+                         with_std_errors: bool = False,
                          labels: Optional[List[str]] = None, figsize: Optional[Tuple[float, float]] = None):
     # plot averaged learning curve for all tasks
     fig, axs = plt.subplots(figsize=figsize or (3.5, 3.5))
 
-    plot_learning_curves_ax(axs, results=results, metric_name=metric_name, labels=labels)
+    plot_learning_curves_ax(axs, results=results, metric_name=metric_name, labels=labels, with_std_errors=with_std_errors)
 
     axs.legend()
     plt.tight_layout()
@@ -272,12 +298,12 @@ def plot_learning_curves(results: ExperimentResults, filename: Union[str, Path],
 
 
 def plot_multiple_learning_curves(results: ExperimentResults, filename: Union[str, Path],
-                                  metric_names: List[str]):
+                                  metric_names: List[str], with_std_errors: bool = False):
     # plot averaged learning curve for all tasks
     fig, axs = plt.subplots(1, len(metric_names), figsize=(7, 4))
 
     for i, metric_name in enumerate(metric_names):
-        plot_learning_curves_ax(axs[i], results, metric_name=metric_name)
+        plot_learning_curves_ax(axs[i], results, metric_name=metric_name, with_std_errors=with_std_errors)
 
     fig.legend(*axs[0].get_legend_handles_labels(), loc='upper center', bbox_to_anchor=(0.5, 0.15), ncol=4)
     plt.tight_layout(rect=[0, 0.15, 1.0, 1.0])
@@ -287,14 +313,15 @@ def plot_multiple_learning_curves(results: ExperimentResults, filename: Union[st
     plt.close(fig)
 
 
-def plot_learning_curves_individual(results: ExperimentResults, metric_name: str):
+def plot_learning_curves_individual(results: ExperimentResults, metric_name: str, with_std_errors: bool = False):
     # plot individual learning curve for all tasks
     ds_names = list({'_'.join(task_name.split('_')[:-1]) for task_name in results.task_names})
     ds_names.sort()
 
     for ds_name in ds_names:
         fig, axs = plt.subplots(figsize=(3.5, 3.5))
-        plot_learning_curves_ax(axs, results.filter_task_names([ds_name + '_256x16']), metric_name=metric_name)
+        plot_learning_curves_ax(axs, results.filter_task_names([ds_name + '_256x16']), metric_name=metric_name,
+                                with_std_errors=with_std_errors)
         axs.legend(fontsize=fontsize)
         plt.tight_layout()
         plot_name = Path(custom_paths.get_plots_path()) / results.exp_name / 'ds_learning_curves' / \
@@ -304,7 +331,8 @@ def plot_learning_curves_individual(results: ExperimentResults, metric_name: str
         plt.close(fig)
 
 
-def plot_learning_curves_individual_subplots(results: ExperimentResults, filename: str, metric_name: str):
+def plot_learning_curves_individual_subplots(results: ExperimentResults, filename: str, metric_name: str,
+                                             with_std_errors: bool = False):
     # plot individual learning curve for all tasks
     ds_names = list({'_'.join(task_name.split('_')[:-1]) for task_name in results.task_names})
     ds_names.sort()
@@ -319,6 +347,7 @@ def plot_learning_curves_individual_subplots(results: ExperimentResults, filenam
         j = ds_idx % 3
         ax = axs[i, j]
         plot_learning_curves_ax(ax, results.filter_task_names([ds_name + '_256x16']), metric_name=metric_name,
+                                with_std_errors=with_std_errors,
                                 set_ticks_and_labels=False, alpha=0.8, markersize=3, linewidth=1.0, markeredgewidth=0.0)
 
         xlocs = [np.log(256), np.log(512), np.log(1024), np.log(2048), np.log(4096)]
@@ -342,7 +371,8 @@ def plot_learning_curves_individual_subplots(results: ExperimentResults, filenam
     plt.close(fig)
 
 
-def plot_learning_curves_metrics_subplots(results: ExperimentResults, filename: Union[str, Path]):
+def plot_learning_curves_metrics_subplots(results: ExperimentResults, filename: Union[str, Path],
+                                          with_std_errors: bool = False):
     # plot mean final log metric against the al batch size
     fig, axs = plt.subplots(3, 2, figsize=(7.2, 9))
     metric_names = ['mae', 'rmse', 'q95', 'q99', 'maxe']
@@ -350,7 +380,7 @@ def plot_learning_curves_metrics_subplots(results: ExperimentResults, filename: 
         i = metric_idx // 2
         j = metric_idx % 2
         ax = axs[i, j]
-        plot_learning_curves_ax(ax, results, metric_name)
+        plot_learning_curves_ax(ax, results, metric_name, with_std_errors=with_std_errors)
 
     axs[-1, -1].axis('off')
     fig.legend(*axs[0, 0].get_legend_handles_labels(), loc='center', bbox_to_anchor=(0.78, 0.18), ncol=1)
@@ -493,7 +523,6 @@ def plot_skewness_ax(ax: plt.Axes, results: ExperimentResults, metric_name: str,
     ax.plot([x_min, x_max], [0.0, 0.0], 'k--', label=r'\textsc{Random}')
 
     # see https://stackoverflow.com/questions/893657/how-do-i-calculate-r-squared-using-python-and-numpy
-    import scipy.stats
     slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x_values, y_values)
     ax.plot([x_min, x_max], [slope * x_min + intercept, slope * x_max + intercept], '-', color='#888888',
             label='Linear Regression fit')

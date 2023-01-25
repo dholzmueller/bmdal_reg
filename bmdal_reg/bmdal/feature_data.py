@@ -1,7 +1,7 @@
 from typing import *
 import torch
 
-from .. import utils
+from bmdal_reg import utils
 
 
 def torch_cat(tensors: List[torch.Tensor], dim: int):

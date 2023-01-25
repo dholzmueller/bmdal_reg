@@ -1,10 +1,6 @@
 from abc import ABC
 import numpy as np
 
-import torch
-from typing import *
-
-from .. import utils
 from .features import *
 
 
@@ -31,7 +27,7 @@ class SelectionMethod:
     def get_status(self) -> Optional:
         """
         :return: Returns an object representing the status of the selection. If all went well, the method returns None.
-        Otherwise it might return a string or something different representing an error that occured.
+        Otherwise, it might return a string or something different representing an error that occured.
         This is mainly useful for analyzing a lot of experiment runs.
         """
         return self.status

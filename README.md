@@ -37,7 +37,7 @@ For certain purposes, especially trying new methods and running the benchmark, i
 The following packages (available through `pip`) need to be installed:
 - General: `torch`, `numpy`, `dill`
 - For running experiments with `run_experiments.py`: `psutil`
-- For plotting the experiment results: `matplotlib`, `seaborn`
+- For plotting the experiment results: `matplotlib`, `seaborn`, `scipy`
 - For downloading the data sets with `download_data.py`: `pandas`, `openml`, `mat4py`
 
 If you want to install PyTorch with GPU support, please follow the instructions [on the PyTorch website](https://pytorch.org/get-started/locally/). The following command installs the versions of the libraries we used for running the benchmark:
@@ -46,7 +46,7 @@ pip3 install -r requirements.txt
 ```
 Alternatively, the following command installs current versions of the packages:
 ```
-pip3 install torch numpy dill psutil matplotlib seaborn pandas openml mat4py
+pip3 install torch numpy dill psutil matplotlib seaborn pandas openml mat4py scipy
 ```
 
 Clone the repository (or download the files from the repository) and change to its folder:
@@ -54,9 +54,9 @@ Clone the repository (or download the files from the repository) and change to i
 git clone git@github.com:dholzmueller/bmdal_reg.git
 cd bmdal_reg
 ```
-Then, copy the file `custom_paths.py.default` to `custom_paths.py` via
+Then, copy the file `bmdal_reg/custom_paths.py.default` to `bmdal_reg/custom_paths.py` via
 ```
-cp custom_paths.py.default custom_paths.py
+cp bmdal_reg/custom_paths.py.default bmdal_reg/custom_paths.py
 ```
 and, if you want to, adjust the paths in `custom_paths.py` to specify the folders in which you want to save data and results.
 
@@ -81,12 +81,13 @@ Besides these notebooks, you can also take a look at the code directly. The more
 ## Code structure
 
 The code is structured as follows:
-- The `bmdal` folder contains the implementation of all BMDAL methods, with its main interface in `bmdal/algorithms.py`.
-- The `evaluation` folder contains code for analyzing and plotting generated data, which is called from `run_evaluation.py`.
+- Library code is contained in the `bmdal_reg` folder, while directly executable files are contained in the top-level folder.
+- The `bmdal_reg/bmdal` folder contains the implementation of all BMDAL methods, with its main interface in `bmdal/algorithms.py`.
+- The `bmdal_reg/evaluation` folder contains code for analyzing and plotting generated data, which is called from `run_evaluation.py`.
 - The `examples` folder contains Jupyter Notebooks for instructive purposes as mentioned above.
 - The file `download_data.py` allows for downloading the data, `run_experiments.py` allows for starting the experiments, `test_single_task.py` allows for testing a configuration on a data set, and `rename_algs.py` contains some functionality for adjusting experiment data in case of mistakes. 
 - The file `check_task_learnability.py` has been used to check the reduction in RMSE on different data sets when going from 256 to 4352 random samples. We used this to sort out the data sets where the reduction in RMSE was too small, since these data sets are unlikely to make a substantial difference in the benchmark results.
-- The files `data.py`, `layers.py`, `models.py`, `task_execution.py`, `train.py` and `utils.py` implement parts of data loading, training, and parallel execution.
+- The files `bmdal_reg/data.py`, `bmdal_reg/layers.py`, `bmdal_reg/models.py`, `bmdal_reg/task_execution.py`, `bmdal_reg/train.py` and `bmdal_reg/utils.py` implement parts of data loading, training, and parallel execution.
 
 ## Updates to the second version of the benchmark
 

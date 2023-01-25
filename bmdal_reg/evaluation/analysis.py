@@ -3,8 +3,8 @@ from typing import *
 from pathlib import Path
 import os
 
-from .. import custom_paths
-from .. import utils
+from bmdal_reg import utils, custom_paths
+
 
 class ExperimentResults:
     def __init__(self, results_dict: dict, exp_name: str):
@@ -24,6 +24,12 @@ class ExperimentResults:
 
     def get_learning_curves(self, key: str) -> 'ExperimentResults':
         return ExperimentResults({alg_name: {task_name: np.mean(np.log([split['errors'][key] for split in split_results]), axis=0)
+                                             for task_name, split_results in task_results.items() if int(task_name.split('_')[-1].split('x')[0]) == 256}
+                                  for alg_name, task_results in self.results_dict.items()}, exp_name=self.exp_name)
+
+    def get_learning_curves_splits(self, key: str) -> 'ExperimentResults':
+        # result.results_dict[alg_name][task_name][split_idx][train_size] = log metric value for key
+        return ExperimentResults({alg_name: {task_name: [np.log(split['errors'][key]) for split in split_results]
                                              for task_name, split_results in task_results.items() if int(task_name.split('_')[-1].split('x')[0]) == 256}
                                   for alg_name, task_results in self.results_dict.items()}, exp_name=self.exp_name)
 
@@ -251,7 +257,7 @@ def get_latex_kernel(base_kernel: str, kernel_transformations: List[Tuple[str, L
         elif name == 'scale':
             steps.append(r'\operatorname{scale}(\mathcal{X}_{\operatorname{train}})')
         elif name == 'rp':
-            steps.append(r'\operatorname{rp}(' + str(args[0]) + ')')
+            steps.append(r'\operatorname{sketch}(' + str(args[0]) + ')')
         elif name == 'ens':
             steps.append(r'\operatorname{ens}(' + str(n_models) + ')')
         elif name == 'acs-rf':

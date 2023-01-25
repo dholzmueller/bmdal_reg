@@ -1,8 +1,4 @@
-import torch
-import torch.nn as nn
-
-from ..layers import *
-from .features import *
+from bmdal_reg.layers import *
 from .selection import *
 
 
@@ -39,7 +35,7 @@ def select_batch(batch_size: int, models: List[nn.Module], data: Dict[str, Featu
     ('pool', [sigma, factor]) does the same for \Xpool instead of \Xtrain
     ('scale', []) applies k_{\to scale(\Xtrain)}
     ('scale', [factor]) scales to factor^2 * k, if factor is not None, and k_{\to scale(\Xtrain)} otherwise
-    ('rp', [n_features]) applies sketching (= random projections) with n_features random features
+    ('rp', [n_features]) or ('sketch', [n_features]) applies sketching with n_features random features
     ('ens', []) applies k_{\to ens}, i.e. ensembling of all kernels.
     ('acs-rf', [n_features, sigma]) applies k_{\to acs-rf(n_features)} with GP noise standard deviation sigma.
                                     As for 'train', there is also an optional third parameter
@@ -318,7 +314,7 @@ class BatchSelectorImpl:
                 for i in range(self.n_models):
                     self.apply_tfm(i, PrecomputeTransform(batch_size=precomp_batch_size))
                     self.apply_tfm(i, self.features['train'][i].scale_tfm(*args))
-            elif tfm_name == 'rp':
+            elif tfm_name == 'rp' or tfm_name == 'sketch':
                 # don't precompute before random projections
                 # since we might want to jointly forward through the model and project in batches
                 # otherwise we might use more memory than needed
