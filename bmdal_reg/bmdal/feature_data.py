@@ -143,6 +143,12 @@ class FeatureData:
         self.device = device
         self.dtype = dtype
 
+    def to(self, device: Union[torch.device, str]):
+        """
+        :param device: Device where the data should be moved to
+        """
+        raise NotImplementedError()
+
     def get_n_samples(self) -> int:
         """
         :return: Returns the number of samples.
@@ -294,6 +300,9 @@ class EmptyFeatureData(FeatureData):
     def __init__(self, device: str, dtype):
         super().__init__(n_samples=0, device=device, dtype=dtype)
 
+    def to(self, device: Union[torch.device, str]):
+        self.device = device
+
     def simplify_impl_(self, idxs: Indexes) -> 'FeatureData':
         return self
 
@@ -314,6 +323,10 @@ class TensorFeatureData(FeatureData):
         """
         super().__init__(n_samples=data.shape[-2], device=data.device, dtype=data.dtype)
         self.data = data
+
+    def to(self, device: Union[torch.device, str]):
+        self.device = device
+        self.data = self.data.to(device)
 
     def get_tensor_impl_(self, idxs: Indexes) -> torch.Tensor:
         return self.data[idxs.get_idxs()]
@@ -342,6 +355,10 @@ class SubsetFeatureData(FeatureData):
         super().__init__(n_samples=len(idxs), device=feature_data.get_device(), dtype=feature_data.get_dtype())
         self.idxs = idxs
         self.feature_data = feature_data
+
+    def to(self, device: Union[torch.device, str]):
+        self.feature_data.to(device)
+        self.device = device
 
     def iterate(self, idxs: Optional[Indexes] = None) -> Iterable[Tuple[Indexes, 'FeatureData']]:
         for sub_idxs, feature_data in self.feature_data.iterate(self.idxs.compose(idxs)):
@@ -374,6 +391,11 @@ class ConcatFeatureData(FeatureData):
                          dtype=feature_data_list[0].get_dtype())
         self.feature_data_list = feature_data_list
         self.sample_sizes = sample_sizes
+
+    def to(self, device: Union[torch.device, str]):
+        for fd in self.feature_data_list:
+            fd.to(device)
+        self.device = device
 
     def iterate(self, idxs: Indexes) -> Iterable[Tuple[Indexes, 'FeatureData']]:
         for i, sub_idxs in idxs.split_by_sizes(self.sample_sizes):
@@ -431,6 +453,10 @@ class BatchedFeatureData(FeatureData):
         self.batch_idxs = [Indexes(self.n_samples, slice(start, stop)) for start, stop in batch_intervals]
         self.sample_sizes = [len(idxs) for idxs in self.batch_idxs]
 
+    def to(self, device: Union[torch.device, str]):
+        self.feature_data.to(device)
+        self.device = device
+
     def iterate(self, idxs: Indexes) -> Iterable[Tuple[Indexes, 'FeatureData']]:
         # print(f'{idxs.get_idxs()=}, {list(idxs.split_by_sizes(self.sample_sizes))=}, {self.sample_sizes=}')
         # print(f'{idxs.get_idxs()=}, {self.sample_sizes=}')
@@ -465,6 +491,11 @@ class ListFeatureData(FeatureData):  # does not concatenate along batch dimensio
         super().__init__(n_samples=feature_data_list[0].get_n_samples(), device=feature_data_list[0].get_device(),
                          dtype=feature_data_list[0].get_dtype())
         self.feature_data_list = feature_data_list
+
+    def to(self, device: Union[torch.device, str]):
+        for fd in self.feature_data_list:
+            fd.to(device)
+        self.device = device
 
     def get_tensor(self, idxs: Optional[Union[torch.Tensor, slice, int, Indexes]] = None) -> torch.Tensor:
         raise NotImplementedError(

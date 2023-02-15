@@ -89,7 +89,11 @@ The code is structured as follows:
 - The file `check_task_learnability.py` has been used to check the reduction in RMSE on different data sets when going from 256 to 4352 random samples. We used this to sort out the data sets where the reduction in RMSE was too small, since these data sets are unlikely to make a substantial difference in the benchmark results.
 - The files `bmdal_reg/data.py`, `bmdal_reg/layers.py`, `bmdal_reg/models.py`, `bmdal_reg/task_execution.py`, `bmdal_reg/train.py` and `bmdal_reg/utils.py` implement parts of data loading, training, and parallel execution.
 
-## Updates to the second version of the benchmark
+## Changes
+
+We fixed a bug where MaxDist, LCMD and KMeansPP selected the first point incorrectly when applied in TP mode (i.e., when using `sel_with_train=True`).
+
+### Updates to the second version of the benchmark
 
 - Added the BAIT selection method with variants BAIT-F and BAIT-FB.
 - For the normalization of input data, mean and standard deviations for the features are now computed on training and pool set instead of only on the initial training set.

@@ -55,6 +55,7 @@ class IterativeSelectionMethod(SelectionMethod):
                                         device=self.pool_features.get_device())
         self.with_train = sel_with_train
         self.verbosity = verbosity
+        self.n_added = 0
 
     def prepare(self, n_adds: int):
         """
@@ -111,6 +112,7 @@ class IterativeSelectionMethod(SelectionMethod):
             # add training points first
             for i in range(len(self.train_features)):
                 self.add(len(self.pool_features)+i)
+                self.n_added += 1
                 if (i+1) % 256 == 0 and self.verbosity >= 1:
                     print(f'Added {i+1} train samples to selection', flush=True)
 
@@ -130,6 +132,7 @@ class IterativeSelectionMethod(SelectionMethod):
                 return torch.cat([selected_idxs_tensor, new_random_idxs], dim=0)
             else:
                 self.add(next_idx)
+                self.n_added += 1
                 self.selected_idxs.append(next_idx)
                 self.selected_arr[next_idx] = True
         return torch.as_tensor(self.selected_idxs, dtype=torch.long, device=torch.device(device))
@@ -460,7 +463,7 @@ class MaxDistSelectionMethod(IterativeSelectionMethod):
         return self.min_sq_dists
 
     def get_next_idx(self) -> Optional[int]:
-        if len(self.selected_idxs) == 0:
+        if self.n_added == 0:
             # no point added yet, take point with largest norm
             return torch.argmax(self.pool_features.get_kernel_matrix_diag()).item()
         scores = self.get_scores().clone()
@@ -499,8 +502,6 @@ class LargestClusterMaxDistSelectionMethod(IterativeSelectionMethod):
         self.neg_inf_tensor = torch.as_tensor([-np.Inf], dtype=pool_features.get_dtype(),
                                               device=pool_features.get_device())
 
-        self.n_added = 0
-
     def get_scores(self) -> torch.Tensor:
         if self.dist_weight_mode == 'sq-dist':
             weights = self.min_sq_dists
@@ -516,7 +517,7 @@ class LargestClusterMaxDistSelectionMethod(IterativeSelectionMethod):
         return torch.where(bincount[self.closest_idxs] == max_bincount, self.min_sq_dists, self.neg_inf_tensor)
 
     def get_next_idx(self) -> Optional[int]:
-        if len(self.selected_idxs) == 0:
+        if self.n_added == 0:
             # no point added yet, take point with largest norm
             return torch.argmax(self.pool_features.get_kernel_matrix_diag()).item()
         scores = self.get_scores().clone()
@@ -526,9 +527,8 @@ class LargestClusterMaxDistSelectionMethod(IterativeSelectionMethod):
 
     def add(self, new_idx: int):
         sq_dists = self.features[new_idx].get_sq_dists(self.pool_features).squeeze(0)
-        self.n_added += 1
         new_min = sq_dists < self.min_sq_dists
-        self.closest_idxs[new_min] = self.n_added
+        self.closest_idxs[new_min] = self.n_added + 1
         self.min_sq_dists[new_min] = sq_dists[new_min]
 
 
@@ -624,7 +624,7 @@ class KmeansppSelectionMethod(MaxDistSelectionMethod):
                          sel_with_train=sel_with_train, **config)
 
     def get_next_idx(self) -> Optional[int]:
-        if len(self.selected_idxs) == 0:
+        if self.n_added == 0:
             return np.random.randint(low=0, high=len(self.pool_features))
         try:
             return torch.multinomial(torch.clamp(self.min_sq_dists, min=0.0), 1).item()
@@ -644,7 +644,7 @@ class RandomizedMinDistSumSelectionMethod(MaxDistSelectionMethod):
 
     def get_next_idx(self) -> Optional[int]:
         n_candidates = min(self.max_n_candidates, len(self.pool_features) - len(self.selected_idxs))
-        weights = torch.ones_like(self.min_sq_dists) if len(self.selected_idxs) == 0 \
+        weights = torch.ones_like(self.min_sq_dists) if self.n_added == 0 \
             else torch.clamp(self.min_sq_dists, min=0.0)
         candidates = torch.multinomial(weights, n_candidates)
         sq_dists = self.pool_features[candidates].get_sq_dists(self.pool_features)

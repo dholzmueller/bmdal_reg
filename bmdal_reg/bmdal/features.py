@@ -29,6 +29,14 @@ class Features:
         if diag is not None and not isinstance(diag, torch.Tensor):
             raise ValueError(f'diag has wrong type {type(diag)}')
 
+    # def to(self, device: Union[str, torch.device]):
+    #     """
+    #     Moves the feature data to the given device.
+    #     :param device: Device where feature data should be moved to.
+    #     """
+    #     self.feature_data.to(device)
+    #     # todo: would also a to() method for the feature map
+
     def precompute(self) -> 'Features':
         """
         :return: Returns a Features object where the feature map is precomputed on the feature data,
