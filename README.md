@@ -51,9 +51,9 @@ The following packages (available through `pip`) need to be installed:
 - For plotting the experiment results: `matplotlib`, `seaborn`, `scipy`
 - For downloading the data sets with `download_data.py`: `pandas`, `openml`, `mat4py`
 
-If you want to install PyTorch with GPU support, please follow the instructions [on the PyTorch website](https://pytorch.org/get-started/locally/). The following command installs the versions of the libraries we used for running the benchmark:
+If you want to install PyTorch with GPU support, please follow the instructions [on the PyTorch website](https://pytorch.org/get-started/locally/). The following command installs the versions of the libraries we used for running the benchmark, which however come with security warnings in the meantime:
 ```
-pip3 install -r requirements.txt
+pip3 install -r requirements_original.txt
 ```
 Alternatively, the following command installs current versions of the packages:
 ```
