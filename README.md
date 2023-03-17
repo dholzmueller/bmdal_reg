@@ -9,6 +9,17 @@ This repository contains code accompanying our paper ["A Framework and Benchmark
 
 If you use this code for research purposes, plese cite [our paper](https://arxiv.org/abs/2203.09410).
 
+## Implemented methods
+
+This repository contains an efficient implementation of our framework for building BMDAL algorithms for NN regression, which includes
+- an implementation of the greedy [Core-Set](https://arxiv.org/abs/1708.00489) method for regression
+- an implementation of [BAIT](https://proceedings.neurips.cc/paper/2021/hash/4afe044911ed2c247005912512ace23b-Abstract.html) for regression
+- an implementation of variants of [ACS-FW](https://proceedings.neurips.cc/paper/2019/hash/84c2d4860a0fc27bcf854c444fb8b400-Abstract.html) for regression
+- an adaptation of [BADGE](https://arxiv.org/abs/1906.03671) for regression
+- an adaptation of [BatchBALD](https://proceedings.neurips.cc/paper/2019/hash/95323660ed2124450caaac2c46b5ed90-Abstract.html) for regression
+- an adaptation of [BALD](https://arxiv.org/abs/1112.5745) for regression
+- an implementation of our own LCMD-TP method with sketched gradient features
+
 ## Versions
 
 - The commit corresponding to [version 1](https://arxiv.org/abs/2203.09410v1) of our arXiv paper is tagged `arxiv_v1` and also archived with the corresponding data at [DaRUS](https://doi.org/10.18419/darus-2615).

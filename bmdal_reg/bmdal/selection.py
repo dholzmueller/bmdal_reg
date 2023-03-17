@@ -258,7 +258,6 @@ class MaxDetSelectionMethod(IterativeSelectionMethod):
         self.noise_sigma = noise_sigma
         self.diag = self.features.get_kernel_matrix_diag() + self.noise_sigma**2
         self.l = None
-        self.n_added = 0
 
     def prepare(self, n_adds: int):
         #
@@ -299,8 +298,6 @@ class MaxDetSelectionMethod(IterativeSelectionMethod):
         self.l[:, self.n_added] = update
         # self.l = update[:, None] if self.l is None else torch.cat([self.l, update[:, None]], dim=1)
         # print('trace(ll^T):', (self.l**2).sum())
-
-        self.n_added += 1
 
         # if str(self.pool_features.get_device()) != 'cpu':
         #     torch.cuda.empty_cache()
