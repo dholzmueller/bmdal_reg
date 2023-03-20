@@ -121,6 +121,7 @@ class IterativeSelectionMethod(SelectionMethod):
             if next_idx is None or next_idx < 0 or next_idx >= len(self.pool_features) or self.selected_arr[next_idx]:
                 # data selection failed
                 # fill up with random remaining indices
+                # print(f'{next_idx=}, {len(self.pool_features)=}')
                 self.status = f'filling up with random samples because selection failed after n_selected = {len(self.selected_idxs)}'
                 if self.verbosity >= 1:
                     print(self.status)
@@ -269,7 +270,7 @@ class MaxDetSelectionMethod(IterativeSelectionMethod):
         self.l = new_l
 
     def get_scores(self) -> torch.Tensor:
-        return self.diag
+        return self.diag[:len(self.pool_features)]
 
     def get_next_idx(self) -> Optional[int]:
         # print('max score:', torch.max(self.get_scores()).item())
@@ -320,7 +321,9 @@ class MaxDetFeatureSpaceSelectionMethod(IterativeSelectionMethod):
         self.feature_matrix = self.features.get_feature_matrix().clone()
 
     def get_scores(self) -> torch.Tensor:
-        return self.diag
+        # if self.n_added % 100 == 0:
+        #     print(f'{self.n_added=}, {self.diag=}')
+        return self.diag[:len(self.pool_features)]
 
     def get_next_idx(self) -> Optional[int]:
         scores = self.get_scores().clone()
@@ -364,7 +367,8 @@ class BaitFeatureSpaceSelectionMethod(ForwardBackwardSelectionMethod):
                                              self.feature_cov_matrix @ self.feature_matrix.t())
 
     def get_scores(self) -> torch.Tensor:
-        return self.scores_numerator / (self.diag + self.noise_sigma**2 + 1e-8)
+        scores = self.scores_numerator / (self.diag + self.noise_sigma**2 + 1e-8)
+        return scores[:len(self.pool_features)]
 
     def get_next_idx(self) -> Optional[int]:
         scores = self.get_scores()
@@ -549,7 +553,7 @@ class FrankWolfeSelectionMethod(IterativeSelectionMethod):
         self.current_embedding = torch.zeros(self.feature_matrix.shape[-1], device=self.feature_matrix.device)
 
     def get_scores(self) -> torch.Tensor:
-        return self.normalized_feature_matrix.matmul(self.kernel_sum_embedding - self.current_embedding)
+        return self.normalized_feature_matrix.matmul(self.kernel_sum_embedding - self.current_embedding)[:len(self.pool_features)]
 
     def get_next_idx(self) -> Optional[int]:
         scores = self.get_scores()
@@ -591,7 +595,7 @@ class FrankWolfeKernelSpaceSelectionMethod(IterativeSelectionMethod):
         self.eps = 1e-30
 
     def get_scores(self) -> torch.Tensor:
-        return (self.u - self.v) / (self.sqrt_diag + self.eps)
+        return ((self.u - self.v) / (self.sqrt_diag + self.eps))[:len(self.pool_features)]
 
     def get_next_idx(self) -> Optional[int]:
         scores = self.get_scores()

@@ -102,7 +102,9 @@ The code is structured as follows:
 
 ## Changes
 
-We fixed a bug where MaxDist, LCMD and KMeansPP selected the first point incorrectly when applied in TP mode (i.e., when using `sel_with_train=True`).
+- We fixed a bug where MaxDist, LCMD and KMeansPP selected the first point incorrectly when applied in TP mode (i.e., when using `sel_with_train=True`).
+- We fixed a bug where MaxDet and BAIT could select a training point for the batch, which would then cause the rest of the batch to be filled up randomly instead. This bug should occur rarely since training points usually have low uncertainty.
+- We fixed a problem where adding jitter if needed for the Cholesky decomposition was only performed for CPU computations.
 
 ### Updates to the second version of the benchmark
 

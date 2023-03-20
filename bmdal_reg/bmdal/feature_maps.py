@@ -10,19 +10,22 @@ def robust_cholesky(matrix: torch.Tensor) -> torch.Tensor:
     :param matrix: Symmetric positive semi-definite matrix to factorize.
     :return: Approximate cholesky factor L such that (approximately) LL^T = matrix
     """
-    eps = 1e-5 * matrix.trace() / matrix.shape[-1]
-    L = None
-    for i in range(10):
+    eps = 1e-5 * matrix.trace() / matrix.shape[-1] + 1e-30
+    for i in range(15):
         try:
+            # on the CPU, cholesky can fail by throwing RuntimeError
+            # on the GPU, cholesky can fail by returning NaN values
+            # we catch both cases
             L = torch.linalg.cholesky(matrix)
-            break
+            if not L.isnan().any().item():
+                return L
         except RuntimeError:
-            print('Increasing jitter for Cholesky decomposition', flush=True)
-            matrix += eps * torch.eye(matrix.shape[-1], device=matrix.device, dtype=matrix.dtype)
-            eps *= 2
-    if L is None:
-        raise RuntimeError('Could not Cholesky decompose the matrix')
-    return L
+            pass
+
+        print('Increasing jitter for Cholesky decomposition', flush=True)
+        matrix += eps * torch.eye(matrix.shape[-1], device=matrix.device, dtype=matrix.dtype)
+        eps *= 2
+    raise RuntimeError('Could not Cholesky decompose the matrix')
 
 
 def robust_cholesky_inv(matrix: torch.Tensor) -> torch.Tensor:
