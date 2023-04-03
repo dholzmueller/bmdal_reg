@@ -24,7 +24,8 @@ This repository contains an efficient implementation of our framework for buildi
 
 - The commit corresponding to [version 1](https://arxiv.org/abs/2203.09410v1) of our arXiv paper is tagged `arxiv_v1` and also archived with the corresponding data at [DaRUS](https://doi.org/10.18419/darus-2615).
 - The commit corresponding to [version 2](https://arxiv.org/abs/2203.09410v2) of our arXiv paper is tagged `arxiv_v2` and also archived with the corresponding data at [DaRUS](https://doi.org/10.18419/darus-3110).
-Results from versions 1 and 2 are run with slightly different options, hence they should not be mixed though the numbers (except for the runtimes) are very similar. Changes in version 2 are listed below.
+- The commit corresponding to [version 3](https://arxiv.org/abs/2203.09410v3) of our arXiv paper is tagged `arxiv_v3` and also archived with the corresponding data at [DaRUS](https://doi.org/10.18419/darus-3394).
+Results from versions 1 and 2 are run with slightly different options, hence they should not be mixed though the numbers (except for the runtimes) are very similar. Changes in version 2 are listed below. Changes in version 3 are minimal and produce almost the same numbers.
 
 ## License
 

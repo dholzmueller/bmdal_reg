@@ -150,10 +150,14 @@ def test_model(model, data, n_models, test_idxs):
 
 def fit_model(model, data, n_models, train_idxs, valid_idxs, n_epochs=256, batch_size=256, lr=3e-1, weight_decay=0.0,
               valid_batch_size=8192, **config):
+    do_valid = valid_idxs is not None and valid_idxs.shape[0] > 0
     train_dl = ParallelDictDataLoader(data, train_idxs.expand(n_models, -1), batch_size=batch_size, shuffle=True,
                                       adjust_bs=False, drop_last=True)
-    valid_dl = ParallelDictDataLoader(data, valid_idxs.expand(n_models, -1), batch_size=valid_batch_size, shuffle=False,
-                                      adjust_bs=False, drop_last=False)
+    if do_valid:
+        valid_dl = ParallelDictDataLoader(data, valid_idxs.expand(n_models, -1), batch_size=valid_batch_size, shuffle=False,
+                                          adjust_bs=False, drop_last=False)
+    else:
+        valid_dl = None
     n_steps = n_epochs * len(train_dl)
     best_valid_rmses = [np.Inf] * n_models
     best_model_params = [p.detach().clone() for p in model.parameters()]
@@ -194,38 +198,41 @@ def fit_model(model, data, n_models, train_idxs, valid_idxs, n_epochs=256, batch
 
             step += 1
 
-        # do one valid epoch
-        valid_sses = torch.zeros(n_models, device=data.device)
-        model.eval()
-        with torch.no_grad():
-            # linear_layers = [module for module in model.modules() if isinstance(module, ParallelLinearLayer)]
-            # hooks = [ll.register_forward_hook(
-            #     lambda layer, inp, out:
-            #     print(f'dead neurons: {(out < 0).all(dim=0).all(dim=0).count_nonzero().item()}'))
-            #     for ll in linear_layers]
-            for batch in valid_dl:
-                X, y = batch['X'], batch['y']
-                valid_sses = valid_sses + ((y - model(X))**2).mean(dim=-1).sum(dim=-1)
-            valid_rmses = torch.sqrt(valid_sses / len(valid_idxs)).detach().cpu().numpy()
-            # for hook in hooks:
-            #     hook.remove()
-
-        # mean_param_norm = np.mean([p.norm().item() for p in model.parameters()])
-        # first_param_mean_abs = list(model.parameters())[0].abs().mean().item()
-        # print(f'Epoch {i+1}, Valid RMSEs: {valid_rmses}, first param mean abs: {first_param_mean_abs:g}, '
-        #       f'grad nonzeros: {grad_nonzeros}')
         print('.', end='')
-        for i in range(n_models):
-            if valid_rmses[i] < best_valid_rmses[i]:
-                best_valid_rmses[i] = valid_rmses[i]
-                for p, best_p in zip(model.parameters(), best_model_params):
-                    best_p[i] = p[i]
+
+        if do_valid:
+            # do one valid epoch
+            valid_sses = torch.zeros(n_models, device=data.device)
+            model.eval()
+            with torch.no_grad():
+                # linear_layers = [module for module in model.modules() if isinstance(module, ParallelLinearLayer)]
+                # hooks = [ll.register_forward_hook(
+                #     lambda layer, inp, out:
+                #     print(f'dead neurons: {(out < 0).all(dim=0).all(dim=0).count_nonzero().item()}'))
+                #     for ll in linear_layers]
+                for batch in valid_dl:
+                    X, y = batch['X'], batch['y']
+                    valid_sses = valid_sses + ((y - model(X))**2).mean(dim=-1).sum(dim=-1)
+                valid_rmses = torch.sqrt(valid_sses / len(valid_idxs)).detach().cpu().numpy()
+                # for hook in hooks:
+                #     hook.remove()
+
+            # mean_param_norm = np.mean([p.norm().item() for p in model.parameters()])
+            # first_param_mean_abs = list(model.parameters())[0].abs().mean().item()
+            # print(f'Epoch {i+1}, Valid RMSEs: {valid_rmses}, first param mean abs: {first_param_mean_abs:g}, '
+            #       f'grad nonzeros: {grad_nonzeros}')
+            for i in range(n_models):
+                if valid_rmses[i] < best_valid_rmses[i]:
+                    best_valid_rmses[i] = valid_rmses[i]
+                    for p, best_p in zip(model.parameters(), best_model_params):
+                        best_p[i] = p[i]
 
     print('', flush=True)
 
-    with torch.no_grad():
-        for p, best_p in zip(model.parameters(), best_model_params):
-            p.set_(best_p)
+    if do_valid:
+        with torch.no_grad():
+            for p, best_p in zip(model.parameters(), best_model_params):
+                p.set_(best_p)
 
 
 
