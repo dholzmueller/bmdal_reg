@@ -100,12 +100,6 @@ The code is structured as follows:
 - The file `check_task_learnability.py` has been used to check the reduction in RMSE on different data sets when going from 256 to 4352 random samples. We used this to sort out the data sets where the reduction in RMSE was too small, since these data sets are unlikely to make a substantial difference in the benchmark results.
 - The files `bmdal_reg/data.py`, `bmdal_reg/layers.py`, `bmdal_reg/models.py`, `bmdal_reg/task_execution.py`, `bmdal_reg/train.py` and `bmdal_reg/utils.py` implement parts of data loading, training, and parallel execution.
 
-## Changes
-
-- We fixed a bug where MaxDist, LCMD and KMeansPP selected the first point incorrectly when applied in TP mode (i.e., when using `sel_with_train=True`).
-- We fixed a bug where MaxDet and BAIT could select a training point for the batch, which would then cause the rest of the batch to be filled up randomly instead. This bug should occur rarely since training points usually have low uncertainty.
-- We fixed a problem where adding jitter if needed for the Cholesky decomposition was only performed for CPU computations.
-
 ### Updates to the second version of the benchmark
 
 - Added the BAIT selection method with variants BAIT-F and BAIT-FB.
@@ -116,6 +110,12 @@ The code is structured as follows:
 - The computation of the last-layer kernel does not require the full backward pass now since the earlier layers set `requires_grad=False` for the computation.
 - Fixed a discrepancy between the implementation of selection methods and the corresponding paper pseudocode: Previously, some selection methods could re-select already selected samples in case of numerical issues, which triggered a code filling up the batch with random samples. Now, selecting already selected samples is explicitly prevented.
 - Changed the interface of `run_experiments.py` to be based on lists instead of callbacks.
+
+## Updates to the third version of the benchmark
+
+- We fixed a bug where MaxDist, LCMD and KMeansPP selected the first point incorrectly when applied in TP mode (i.e., when using `sel_with_train=True`). This only led to negligible differences at the batch sizes used in our benchmark.
+- We fixed a bug where MaxDet and BAIT could select a training point for the batch, which would then cause the rest of the batch to be filled up randomly instead. This bug should occur rarely since training points usually have very low uncertainty, and it did not affect our benchmark results.
+- We fixed a problem where adding jitter if needed for the Cholesky decomposition was only performed for CPU computations. This should also not affect the benchmark results because the benchmark was run with regularization and 64-bit floats.
 
 ## Contributors
 

@@ -28,6 +28,7 @@ class NNRegressor:
         :param weight_gain: Factor for the weight parameters of linear layers.
         :param bias_gain: Factor for the bias parameters of linear layers.
         :param valid_fraction: Which fraction of the training data set should be used for validation.
+        If valid_fraction==0.0, early stopping will not be used.
         :param device: Device to train on. Should be a string that PyTorch accepts, such as 'cpu' or 'cuda:0'.
         If None, the first GPU is used if one is found, otherwise the CPU is used.
         :param preprocess_data: Whether X and y values should be standardized for training and X should be soft-clipped.
@@ -80,7 +81,7 @@ class NNRegressor:
         data = DictDataset({'X': X, 'y': y})
         n_valid = int(self.valid_fraction * X.shape[0])
         perm = np.random.permutation(X.shape[0])
-        valid_idxs = torch.as_tensor(perm[:n_valid]).to(self.device)
+        valid_idxs = None if n_valid == 0 else torch.as_tensor(perm[:n_valid]).to(self.device)
         train_idxs = torch.as_tensor(perm[n_valid:]).to(self.device)
 
         fit_model(self.model_, data, n_models=self.n_models, train_idxs=train_idxs, valid_idxs=valid_idxs,
