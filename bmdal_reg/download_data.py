@@ -26,9 +26,10 @@ def download_if_not_exists(url: str, dest: str):
         # open(dest, 'wb').write(file.content)
         r = requests.get(url, stream=True)
         with open(dest, 'wb') as f:
-            print('Progress (dot = 1 MB): ', end='', flush=True)
-            for ch in r.iter_content(chunk_size=1024**2):
-                print('.', end='', flush=True)
+            print('Progress (dot = 100 KB): ', end='', flush=True)
+            for i, ch in enumerate(r.iter_content(chunk_size=1024**2)):
+                if i % 100 == 99:
+                    print('.', end='', flush=True)
                 f.write(ch)
             print(flush=True)
 
@@ -401,14 +402,20 @@ def import_all():
     proc = PandasTaskPreprocessor(min_n_samples=30000, max_tvp_samples=200000, max_test_samples=300000,
                                   max_one_hot_columns=300)
 
-    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/ml/machine-learning-databases/00440/sgemm_product_dataset.zip',
-                   ds_name='sgemm', zip_name='sgemm_product_dataset.zip', csv_name='sgemm_product.csv',
+    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/static/public/440/sgemm+gpu+kernel+performance.zip',
+                   ds_name='sgemm', zip_name='sgemm+gpu+kernel+performance.zip', csv_name='sgemm_product.csv',
                    target_col_idxs=[14, 15, 16, 17], use_log_target=True))
-    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/ml/machine-learning-databases/00206/slice_localization_data.zip',
-                   ds_name='ct', zip_name='slice_localization_data.zip', csv_name='slice_localization_data.csv',
+    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/static/public/206/relative+location+of+ct+slices+on+axial+axis.zip',
+                   ds_name='ct', zip_name='relative+location+of+ct+slices+on+axial+axis.zip', csv_name='slice_localization_data.csv',
                    target_col_idxs=[385], ignore_col_idxs=[0]))
-    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/ml/machine-learning-databases/00221/Reaction%20Network%20(Undirected).data',
-                   ds_name='kegg_undir_uci', zip_name='kegg_undir_uci.csv', csv_name='kegg_undir_uci.csv',
+    # old version with broken link:
+    # proc.apply(PandasTask.from_uci(
+    #     'https://data.world/uci/kegg-metabolic-reaction-network-undirected',
+    #     ds_name='kegg_undir_uci', zip_name='kegg_undir_uci.csv', csv_name='kegg_undir_uci.csv',
+    #     target_col_idxs=[26], ignore_col_idxs=[0], has_header=False, continuous_nan_columns=[4]))
+    # new version:
+    proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/static/public/221/kegg+metabolic+reaction+network+undirected.zip',
+                   ds_name='kegg_undir_uci', zip_name='kegg_undir_uci.zip', csv_name='Reaction Network (Undirected).data',
                    target_col_idxs=[26], ignore_col_idxs=[0], has_header=False, continuous_nan_columns=[4]))
     # only use the Sydney part of the data set (could as well have used Adelaide, Perth or Tasmania)
     proc.apply(PandasTask.from_uci('https://archive.ics.uci.edu/ml/machine-learning-databases/00494/WECs_DataSet.zip',
