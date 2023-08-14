@@ -232,7 +232,12 @@ class PandasTask:
         :return: Returns a PandasTask representing the corresponding OpenML data set.
         """
         print(f'Importing dataset {ds_name}')
-        openml.config.set_cache_directory('./openml_cache')
+        if 'set_root_cache_directory' in dir(openml.config):
+            # newer openml versions
+            openml.config.set_root_cache_directory('./openml_cache')
+        elif 'set_cache_directory' in dir(openml.config):
+            # older openml versions
+            openml.config.set_cache_directory('./openml_cache')
         dataset = openml.datasets.get_dataset(dataset_id, download_data=False)
         print(f'dataset name: {dataset.name}')
         # print(dataset.get_data(dataset_format='dataframe'))
