@@ -317,22 +317,26 @@ class TensorFeatureData(FeatureData):
     """
     FeatureData subclass representing data consisting of a single tensor of shape [n_samples, n_features].
     """
-    def __init__(self, data: torch.Tensor):
+    def __init__(self, data: torch.Tensor, output_device: Optional[str] = None):
         """
         :param data: Tensor of shape [n_samples, ...], usually [n_samples, n_features]
         """
         super().__init__(n_samples=data.shape[-2], device=data.device, dtype=data.dtype)
         self.data = data
+        self.output_device = output_device
 
     def to(self, device: Union[torch.device, str]):
         self.device = device
         self.data = self.data.to(device)
 
     def get_tensor_impl_(self, idxs: Indexes) -> torch.Tensor:
-        return self.data[idxs.get_idxs()]
+        tensor = self.data[idxs.get_idxs()]
+        if self.output_device is not None:
+            tensor = tensor.to(self.output_device)
+        return tensor
 
     def simplify_impl_(self, idxs: Indexes) -> 'FeatureData':
-        return TensorFeatureData(self.get_tensor_impl_(idxs))
+        return TensorFeatureData(self.data[idxs.get_idxs()])
 
     def simplify_multi_(self, feature_data_list: List['TensorFeatureData'], idxs_list: List[Indexes]) -> 'FeatureData':
         return TensorFeatureData(torch_cat([fd.data[idxs.get_idxs()]
