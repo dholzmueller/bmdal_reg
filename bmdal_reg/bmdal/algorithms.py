@@ -52,7 +52,7 @@ def select_batch(batch_size: int, models: List[nn.Module], data: Dict[str, Featu
     :param precomp_batch_size: Batch size used for precomputations of the features.
     :param nn_batch_size: Batch size used for passing the data through the NN.
     :param config: Other options. Examples:
-    allow_float64=True: enables using float64 tensors if maxdet or transformations involving posteriors are used.
+    allow_float64=False: enables using float64 tensors if maxdet or transformations involving posteriors are used.
     compute_eff_dim=True: Triggers the computation of the effective dimension of the pool set kernel matrix
                             for kernels with feature space dimension <= 1000.
     sel_with_train=True/False: Forces TP/P-mode for the selection method.
@@ -182,7 +182,7 @@ class BatchSelectorImpl:
         :param precomp_batch_size: Batch size used for precomputations of the features.
         :param nn_batch_size: Batch size used for passing the data through the NN.
         :param config: Other options. Examples:
-        allow_float64=True: enables using float64 tensors if maxdet or transformations involving posteriors are used.
+        allow_float64=False: enables using float64 tensors if maxdet or transformations involving posteriors are used.
         compute_eff_dim=True: Triggers the computation of the effective dimension of the pool set kernel matrix
                                 for kernels with feature space dimension <= 1000.
         sel_with_train=True/False: Forces TP/P-mode for the selection method.
